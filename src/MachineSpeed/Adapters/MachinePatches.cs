@@ -9,7 +9,10 @@ namespace MachineSpeed.Adapters;
 // One small class per machine because Harmony patches are static and each machine keeps its own speed. Every patch
 // runs inside the game's own call, so nothing may escape it.
 
-/// <summary>The shredder asks the game's config for an item's shred time in whole minutes when it starts.</summary>
+/// <summary>
+/// The shredder hands each item's job its length in game seconds when it starts. The panel's time for the next item
+/// is the game's minutes, so it is brought in step; the running job's own seconds are already sped up.
+/// </summary>
 internal static class ShredderPatch
 {
     private static Speed _speed = Speed.GamePace;
@@ -19,52 +22,33 @@ internal static class ShredderPatch
     public static void Apply(Harmony harmony, Speed speed, SpeedLog log)
     {
         (_speed, _failures, _first) = (speed, new HookFailures(log.Write, "speeding up the shredder"), new FirstUse(log.WriteFileOnly));
-        Machine.Hook(log, "shredder", speed, () =>
-            harmony.Patch(Machine.Method(typeof(ConfigManager), nameof(ConfigManager.GetShredMinutes)), postfix: Machine.Patch(typeof(ShredderPatch), nameof(Scale))));
+        Machine.Hook(log, "shredder", speed,
+            () => harmony.Patch(Machine.Method(typeof(ShredderComponent), nameof(ShredderComponent.BeginShred)), prefix: Machine.Patch(typeof(ShredderPatch), nameof(ScaleJob))),
+            () => harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.BuildShredderPanelData)), postfix: Machine.Patch(typeof(ShredderPatch), nameof(ScalePanel))));
     }
 
-    private static void Scale(ref int __result)
+    private static void ScaleJob(ref int totalSeconds)
     {
         try
         {
-            var gameMinutes = __result;
+            var gameSeconds = totalSeconds;
 
-            var minutes = Scaling.WholeUnits(gameMinutes, _speed);
+            var seconds = Scaling.Seconds(gameSeconds, _speed);
 
-            __result = minutes;
-            _first.Note(() => $"first shred: game {gameMinutes} min, now {minutes} min");
+            totalSeconds = seconds;
+            _first.Note(() => $"first shred: game {gameSeconds}s, now {seconds}s");
         }
         catch (Exception ex)
         {
             _failures.Report(ex);
         }
     }
-}
 
-/// <summary>The ration press works out a batch, minutes included, in one formula that the panel and the press both read.</summary>
-internal static class RationPressPatch
-{
-    private static Speed _speed = Speed.GamePace;
-    private static HookFailures _failures = HookFailures.Silent;
-    private static FirstUse _first = FirstUse.Silent;
-
-    public static void Apply(Harmony harmony, Speed speed, SpeedLog log)
-    {
-        (_speed, _failures, _first) = (speed, new HookFailures(log.Write, "speeding up the ration press"), new FirstUse(log.WriteFileOnly));
-        Machine.Hook(log, "ration press", speed, () =>
-            harmony.Patch(Machine.Method(typeof(CompressFormula), nameof(CompressFormula.Calc)), postfix: Machine.Patch(typeof(RationPressPatch), nameof(Scale))));
-    }
-
-    private static void Scale(CompressBatch __result)
+    private static void ScalePanel(ShredderPanelData __result)
     {
         try
         {
-            if (__result == null) return;
-
-            var gameMinutes = __result.Minutes;
-
-            __result.Minutes = Scaling.WholeUnits(gameMinutes, _speed);
-            _first.Note(() => $"first ration batch: game {gameMinutes} min, now {__result.Minutes} min");
+            if (__result != null) __result.TimeCost = Scaling.Shown(__result.TimeCost, _speed);
         }
         catch (Exception ex)
         {
@@ -74,10 +58,10 @@ internal static class RationPressPatch
 }
 
 /// <summary>
-/// A dye job is timed in whole hours per bucket from the moment it begins. The idle vat's panel estimates the job
-/// from the game's hours, so it is brought in step; a running vat's panel reads the job, which is already sped up.
+/// The Ration Press hands a batch its length in game seconds when it starts. The panel's minutes for a batch are the
+/// game's, so they are brought in step; the running batch's own seconds are already sped up.
 /// </summary>
-internal static class DyeVatPatch
+internal static class RationPressPatch
 {
     private static Speed _speed = Speed.GamePace;
     private static HookFailures _failures = HookFailures.Silent;
@@ -85,22 +69,22 @@ internal static class DyeVatPatch
 
     public static void Apply(Harmony harmony, Speed speed, SpeedLog log)
     {
-        (_speed, _failures, _first) = (speed, new HookFailures(log.Write, "speeding up the dye vat"), new FirstUse(log.WriteFileOnly));
-        Machine.Hook(log, "dye vat", speed,
-            () => harmony.Patch(Machine.Method(typeof(DyeComponent), nameof(DyeComponent.Begin)), prefix: Machine.Patch(typeof(DyeVatPatch), nameof(ScaleJob))),
-            () => harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.BuildDyePanelData)), postfix: Machine.Patch(typeof(DyeVatPatch), nameof(ScalePanel))));
+        (_speed, _failures, _first) = (speed, new HookFailures(log.Write, "speeding up the ration press"), new FirstUse(log.WriteFileOnly));
+        Machine.Hook(log, "ration press", speed,
+            () => harmony.Patch(Machine.Method(typeof(CompressorComponent), nameof(CompressorComponent.BeginCompress)), prefix: Machine.Patch(typeof(RationPressPatch), nameof(ScaleJob))),
+            () => harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.BuildCompressorPanelData)), postfix: Machine.Patch(typeof(RationPressPatch), nameof(ScalePanel))));
     }
 
-    private static void ScaleJob(ref int hoursPerBucket)
+    private static void ScaleJob(ref int totalSeconds)
     {
         try
         {
-            var gameHours = hoursPerBucket;
+            var gameSeconds = totalSeconds;
 
-            var hours = Scaling.WholeUnits(gameHours, _speed);
+            var seconds = Scaling.Seconds(gameSeconds, _speed);
 
-            hoursPerBucket = hours;
-            _first.Note(() => $"first dye job: game {gameHours}h per bucket, now {hours}h");
+            totalSeconds = seconds;
+            _first.Note(() => $"first ration batch: game {gameSeconds}s, now {seconds}s");
         }
         catch (Exception ex)
         {
@@ -108,16 +92,11 @@ internal static class DyeVatPatch
         }
     }
 
-    private static void ScalePanel(DyePanelData __result)
+    private static void ScalePanel(CompressorPanelData __result)
     {
         try
         {
-            if (__result == null) return;
-
-            var panel = Scaling.Dye(new DyePreview(__result.State, __result.BucketCount, __result.HoursPerBucket, __result.PreviewTotalHours), _speed);
-
-            __result.HoursPerBucket = panel.HoursPerBucket;
-            __result.PreviewTotalHours = panel.PreviewTotalHours;
+            if (__result != null) __result.Minutes = Scaling.Shown(__result.Minutes, _speed);
         }
         catch (Exception ex)
         {
@@ -238,10 +217,7 @@ internal static class DroneTripPatch
     }
 }
 
-/// <summary>
-/// A cook is handed its length in game seconds when it starts; fuel burns by progress, so a shorter cook burns the
-/// same fuel per dish.
-/// </summary>
+/// <summary>A cook is handed its length in game seconds when it starts.</summary>
 internal static class CookingPatch
 {
     private static Speed _speed = Speed.GamePace;
@@ -265,6 +241,57 @@ internal static class CookingPatch
 
             cookDuration = duration;
             _first.Note(() => $"first cook: game {gameDuration:0.##}s, now {duration:0.##}s");
+        }
+        catch (Exception ex)
+        {
+            _failures.Report(ex);
+        }
+    }
+}
+
+/// <summary>
+/// A cook burns fuel by how far along it is times its length, so a shorter cook would burn less. The fuel rate is
+/// raised by the cooking speed to undo that, then set by the player's fuel amount.
+/// </summary>
+internal static class CookingFuelPatch
+{
+    private static Speed _cooking = Speed.GamePace;
+    private static FuelUse _fuel = FuelUse.GameAmount;
+    private static HookFailures _failures = HookFailures.Silent;
+    private static FirstUse _first = FirstUse.Silent;
+
+    public static void Apply(Harmony harmony, Speed cooking, FuelUse fuel, SpeedLog log)
+    {
+        (_cooking, _fuel, _failures, _first) = (cooking, fuel, new HookFailures(log.Write, "changing the cooking fuel"), new FirstUse(log.WriteFileOnly));
+
+        if (cooking.IsGamePace && fuel.IsGameAmount)
+        {
+            log.Write("cooking fuel left at the game's amount");
+
+            return;
+        }
+
+        try
+        {
+            harmony.Patch(Machine.Method(typeof(CookingComponent), nameof(CookingComponent.UpdateFuelFromProgress)), prefix: Machine.Patch(typeof(CookingFuelPatch), nameof(ScaleRate)));
+            log.Write($"cooking fuel x{fuel.Value:0.##} per dish");
+        }
+        catch (Exception ex)
+        {
+            log.Write($"could not hook the cooking fuel, a cook burns the game's fuel for its length: {ex.Message}");
+        }
+    }
+
+    private static void ScaleRate(ref float fuelRate)
+    {
+        try
+        {
+            var gameRate = fuelRate;
+
+            var rate = Scaling.CookingFuelRate(gameRate, _cooking, _fuel);
+
+            fuelRate = rate;
+            _first.Note(() => $"first cooking fuel: game rate {gameRate:0.###}, now {rate:0.###}");
         }
         catch (Exception ex)
         {

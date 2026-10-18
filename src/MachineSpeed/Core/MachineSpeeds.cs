@@ -18,7 +18,7 @@ public enum SpeedVerdict
 public sealed class Speed
 {
     public const float Slowest = 0.25f;
-    public const float Fastest = 20f;
+    public const float Fastest = 100000f;
 
     public static readonly Speed GamePace = new(1f, 1f, SpeedVerdict.AsWritten);
 
@@ -57,12 +57,10 @@ public sealed class Speed
     };
 }
 
-/// <summary>A dye vat's panel figures before it is shown; <paramref name="State"/> 0 is an idle vat.</summary>
-public readonly record struct DyePreview(int State, int BucketCount, int HoursPerBucket, int PreviewTotalHours);
-
 /// <summary>
-/// Turns the game's machine durations into sped-up ones. A duration only ever gets shorter or longer, never zero,
-/// so no machine finishes the moment it starts; one the game does not time (0 or less) is left alone.
+/// Turns the game's machine durations into sped-up ones. A timed job never drops below one game second, so a very
+/// high speed finishes a job almost at once but never before it starts; one the game does not time (0 or less) is
+/// left alone.
 /// </summary>
 public static class Scaling
 {
@@ -70,13 +68,26 @@ public static class Scaling
     public static float Duration(float gameValue, Speed speed) =>
         speed.IsGamePace || !float.IsFinite(gameValue) || gameValue <= 0f ? gameValue : gameValue / speed.Value;
 
-    /// <summary>A duration the game keeps in whole minutes or hours; it never drops below 1.</summary>
-    public static int WholeUnits(int gameValue, Speed speed) =>
-        speed.IsGamePace || gameValue <= 0 ? gameValue : Math.Max(1, (int)Math.Round(gameValue / speed.Value, MidpointRounding.AwayFromZero));
+    /// <summary>A job's length in whole game seconds; it never drops below 1.</summary>
+    public static int Seconds(int gameSeconds, Speed speed) =>
+        speed.IsGamePace || gameSeconds <= 0 ? gameSeconds : Math.Max(1, (int)Math.Round(gameSeconds / (double)speed.Value, MidpointRounding.AwayFromZero));
+
+    /// <summary>
+    /// A time a panel shows (minutes, hours or seconds), rounded up so a job still running never reads 0.
+    /// </summary>
+    public static int Shown(int gameValue, Speed speed) =>
+        speed.IsGamePace || gameValue <= 0 ? gameValue : Math.Max(1, (int)Math.Ceiling(gameValue / (double)speed.Value));
 
     /// <summary>Fuel a generator takes for one stretch of running: a faster burn takes more, so fuel runs out sooner.</summary>
     public static float Burn(float gameBurn, Speed speed) =>
         speed.IsGamePace || !float.IsFinite(gameBurn) || gameBurn <= 0f ? gameBurn : gameBurn * speed.Value;
+
+    /// <summary>
+    /// The game burns cooking fuel by how far a cook is times its length, so a faster cook would burn less per dish.
+    /// Raising the rate by the cooking speed keeps the fuel per dish the game's, and the fuel amount then sets it.
+    /// </summary>
+    public static float CookingFuelRate(float gameRate, Speed cooking, FuelUse fuel) =>
+        !float.IsFinite(gameRate) || gameRate <= 0f ? gameRate : gameRate * cooking.Value * fuel.Value;
 
     /// <summary>When a drone gets back, in game seconds; the trip is at least one second long.</summary>
     public static int ReturnTime(int departSec, int gameReturnSec, Speed speed)
@@ -85,20 +96,105 @@ public static class Scaling
 
         if (speed.IsGamePace || trip <= 0) return gameReturnSec;
 
-        return departSec + Math.Max(1, (int)Math.Round(trip / speed.Value, MidpointRounding.AwayFromZero));
+        return departSec + Seconds(trip, speed);
+    }
+}
+
+/// <summary>
+/// How much fuel a stove or hot pot uses for the same cooking: 1 is the game's, 0 uses none, 2 uses twice as much.
+/// Only <see cref="From"/> makes one.
+/// </summary>
+public sealed class FuelUse
+{
+    public const float Most = 20f;
+
+    public static readonly FuelUse GameAmount = new(1f, 1f, SpeedVerdict.AsWritten);
+
+    private FuelUse(float value, float requested, SpeedVerdict verdict)
+    {
+        Value = value;
+        Requested = requested;
+        Verdict = verdict;
+    }
+
+    public float Value { get; }
+
+    public float Requested { get; }
+
+    public SpeedVerdict Verdict { get; }
+
+    public bool IsGameAmount => Value == 1f;
+
+    /// <summary>Negatives and non-numbers fall back to the game's amount; anything over the most is pulled down.</summary>
+    public static FuelUse From(float requested)
+    {
+        if (!float.IsFinite(requested) || requested < 0f) return new FuelUse(1f, requested, SpeedVerdict.Rejected);
+
+        var value = Math.Min(requested, Most);
+
+        return new FuelUse(value, requested, value == requested ? SpeedVerdict.AsWritten : SpeedVerdict.Clamped);
+    }
+
+    public string? Complaint(string key) => Verdict switch
+    {
+        SpeedVerdict.AsWritten => null,
+        SpeedVerdict.Clamped => $"{key} = {Requested} is over {Most}, using {Value}",
+        SpeedVerdict.Rejected => $"{key} = {Requested} is not an amount of 0 or more, using the game's (1)",
+        _ => throw new ArgumentOutOfRangeException(nameof(Verdict), Verdict, "unknown verdict"),
+    };
+}
+
+/// <summary>
+/// The game times brewing, dyeing and compost in whole game hours and checks them once an hour, so a shorter job
+/// cannot be handed to it. Instead the job is moved along: every time this is told the game clock, the extra time a
+/// faster speed adds (or a slower one takes away) builds up, and each whole hour of it moves the job one hour on.
+/// The part under an hour carries over, which is what lets a job finish between the game's hourly checks.
+/// </summary>
+public sealed class SpedUpClock
+{
+    private const double SecondsPerHour = 3600.0;
+    private const double MostHoursAtOnce = 1_000_000.0;
+
+    private int? _lastSeconds;
+    private double _carrySeconds;
+
+    /// <summary>
+    /// The whole hours to move the job on since the last call. The first call, and a clock that went back (a save
+    /// loaded), only start counting from now.
+    /// </summary>
+    public int ExtraHours(int nowSeconds, Speed speed)
+    {
+        if (_lastSeconds is not { } last || nowSeconds < last)
+        {
+            _lastSeconds = nowSeconds;
+            _carrySeconds = 0;
+
+            return 0;
+        }
+
+        _lastSeconds = nowSeconds;
+        _carrySeconds += (nowSeconds - last) * (speed.Value - 1.0);
+
+        var hours = Math.Clamp(Math.Truncate(_carrySeconds / SecondsPerHour), -MostHoursAtOnce, MostHoursAtOnce);
+
+        _carrySeconds -= hours * SecondsPerHour;
+
+        return (int)hours;
     }
 
     /// <summary>
-    /// The panel of an idle vat estimates the next dye job from the game's hours per bucket; this gives the hours the
-    /// job will really take. A running vat already shows the sped-up hours it was started with, so it is left alone.
+    /// How many hours a job of <paramref name="totalHours"/> has now run. It never goes under 0 or past the end; time
+    /// cut off at either end is dropped rather than kept for later.
     /// </summary>
-    public static DyePreview Dye(DyePreview panel, Speed speed)
+    public int Elapsed(int nowSeconds, int elapsedHours, int totalHours, Speed speed)
     {
-        if (speed.IsGamePace || panel.State != 0 || panel.PreviewTotalHours <= 0 || panel.HoursPerBucket <= 0) return panel;
+        var moved = (long)elapsedHours + ExtraHours(nowSeconds, speed);
 
-        var hours = WholeUnits(panel.HoursPerBucket, speed);
+        if (moved >= 0 && moved <= totalHours) return (int)moved;
 
-        return panel with { HoursPerBucket = hours, PreviewTotalHours = panel.BucketCount * hours };
+        _carrySeconds = 0;
+
+        return (int)Math.Clamp(moved, 0, Math.Max(0, totalHours));
     }
 }
 

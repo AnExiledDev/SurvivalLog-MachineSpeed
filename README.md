@@ -1,22 +1,24 @@
 # Machine Speed
 
-Sets how fast the machines at your base work: the shredder, the Ration Press, the dye vat, plant growth, fuel generators, drone trips, brewing and cooking.
+Sets how fast the machines at your base work: the shredder, the Ration Press, the dye vat, compost bins, plant growth, fuel generators, drone trips, brewing and cooking.
 
-Each machine has its own speed. 2 means a job takes half the game time, 0.5 means twice as long. Every speed defaults to 1, and at 1 the mod does not touch that machine at all, so you only change what you set.
+Each machine has its own speed. 2 means a job takes half the game time, 0.5 means twice as long. Speeds go up to 100000, so a job can be close to instant: the shortest job is 1 game second. Every speed defaults to 1, and at 1 the mod does not touch that machine at all, so you only change what you set.
 
 ## Features
 
-- **Shredder** and **Ration Press**: a job takes less game time. Both time a job in whole minutes, so a job never takes under 1 minute.
-- **Dye vat**: each bucket takes less time. The vat times a bucket in whole hours, so a bucket never takes under 1 hour, and the vat's panel shows the hours the job will really take.
+- **Shredder** and **Ration Press**: a job takes less game time, down to 1 second. Their panels show the time a job will really take.
+- **Dye vat**: each bucket takes less time, and a fast vat finishes a bucket in seconds. The vat's panel shows the time the job will really take.
+- **Compost bins**: food in a compost bin turns into compost sooner. Only the bin is sped up; food anywhere else rots at the game's pace.
 - **Plant growth**: plants grow faster or slower.
 - **Fuel burn**: how fast fuel generators use up fuel. 2 burns it twice as fast; 0.5 makes a tank last twice as long. The time left on the generator's panel follows it.
 - **Drone trips**: a drone comes back sooner.
-- **Brewing**: a brew takes fewer hours, and the brewing panel shows the hours it will really take.
-- **Cooking** at a stove or hot pot takes less time. It burns the same fuel per dish.
+- **Brewing**: a brew takes less time, and a fast brew finishes in seconds. The brewing panel shows the hours it will really take.
+- **Cooking** at a stove or hot pot takes less time. It burns the same fuel per dish at any speed.
+- **Cooking fuel**: how much fuel a stove or hot pot uses for each dish. 0.5 is half, 0 uses none.
 - **Takes your old settings**: brewing and cooking used to be in Action Speed. The first time Machine Speed starts, it reads your `Brewing` and `Cooking` values from Action Speed's config and uses them.
 - **Log file**: what the mod set up at startup, and the first job each machine did with it, go to `BepInEx\machine-speed.log`.
 
-Speed changes apply at the next game start. A shred, ration batch, dye job, drone trip, brew or cook that is already running keeps the length it started with. Machine Speed writes no data of its own into your save and does not edit game files. A job's sped-up length is held by the job, so it can end up in your save. You can remove the mod at any time; jobs started after that take the game's own time again.
+Speed changes apply at the next game start. A shred, ration batch, drone trip or cook that is already running keeps the length it started with. Brews, dye jobs and compost bins follow the new speed from the next game start, including the ones already running. Machine Speed writes no data of its own into your save and does not edit game files. A job's sped-up length is held by the job, so it can end up in your save. You can remove the mod at any time; jobs started after that take the game's own time again.
 
 All settings are listed in [CONFIG.md](CONFIG.md).
 

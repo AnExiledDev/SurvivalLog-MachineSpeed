@@ -13,12 +13,12 @@ namespace MachineSpeed;
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.machinespeed";
-    private const string Version = "0.1.0";
+    private const string Version = "0.2.0";
     private const string Section = "Machines";
     private const string ActionSpeedConfig = "com.dev.survivallog.actionspeed.cfg";
 
-    private const string Range = "From 0.25 to 20: 1 is the game's pace, 2 is twice as fast. 0 or less counts as 1.";
-    private const string RangeChinese = "范围 0.25 到 20：1 为游戏原速，2 为两倍速。0 或更小按 1 计算。";
+    private const string Range = "From 0.25 to 100000: 1 is the game's pace, 2 is twice as fast, a very high number makes it almost instant. 0 or less counts as 1.";
+    private const string RangeChinese = "范围 0.25 到 100000：1 为游戏原速，2 为两倍速，数值很大时几乎立即完成。0 或更小按 1 计算。";
 
     public override void Load()
     {
@@ -27,16 +27,20 @@ public sealed class Plugin : BasePlugin
         log.TrimIfLarge();
 
         var isFirstStart = !ReadsAs(Config.ConfigFilePath, text => ConfigText.HasSection(text, Section), log.Write);
-        var shredder = Bind("Shredder", "the shredder. It times a job in whole minutes, so a job never takes under 1 minute.", "粉碎机的速度。粉碎按整分钟计时，所以每次至少 1 分钟。");
-        var rationPress = Bind("RationPress", "the Ration Press. It times a batch in whole minutes, so a batch never takes under 1 minute.", "口粮压制机的速度。每批按整分钟计时，所以每批至少 1 分钟。");
-        var dyeVat = Bind("DyeVat", "the dye vat. It times each bucket in whole hours, so a bucket never takes under 1 hour.", "染料桶的速度。每桶按整小时计时，所以每桶至少 1 小时。");
+        var shredder = Bind("Shredder", "the shredder.", "粉碎机的速度。");
+        var rationPress = Bind("RationPress", "the Ration Press.", "口粮压制机的速度。");
+        var dyeVat = Bind("DyeVat", "the dye vat.", "染料桶的速度。");
         var plantGrowth = Bind("PlantGrowth", "plant growth.", "植物生长的速度。");
         var droneTrips = Bind("DroneTrips", "drone trips: a faster trip brings the drone back sooner.", "无人机出行的速度：越快，无人机越早返回。");
-        var brewing = Bind("Brewing", "brewing alcohol. It times a brew in whole hours, so a brew never takes under 1 hour.", "酿酒的速度。酿酒按整小时计时，所以每次至少 1 小时。");
+        var brewing = Bind("Brewing", "brewing alcohol.", "酿酒的速度。");
         var cooking = Bind("Cooking", "cooking at a stove or hot pot.", "在燃气灶或火锅上烹饪的速度。");
+        var compost = Bind("Compost", "compost bins turning food into compost.", "堆肥箱把食物变成堆肥的速度。");
+        var cookingFuel = Config.Bind(Section, "CookingFuel", 1f,
+            "How much fuel a stove or hot pot uses for each dish, whatever the cooking speed: 1 is the game's amount, 0.5 is half, 0 uses none, 2 is twice as much. From 0 to 20; less than 0 counts as 1.\n" +
+            "燃气灶或火锅每道菜消耗的燃料，与烹饪速度无关：1 为游戏原量，0.5 为一半，0 不消耗，2 为两倍。范围 0 到 20，小于 0 按 1 计算。");
         var fuelBurn = Config.Bind(Section, "FuelBurn", 1f,
-            "How fast fuel generators burn fuel: 2 burns it twice as fast, 0.5 makes it last twice as long. From 0.25 to 20; 0 or less counts as 1.\n" +
-            "燃油发电机消耗燃料的速度：2 为两倍消耗，0.5 让燃料多用一倍时间。范围 0.25 到 20，0 或更小按 1 计算。");
+            "How fast fuel generators burn fuel: 2 burns it twice as fast, 0.5 makes it last twice as long. From 0.25 to 100000; 0 or less counts as 1.\n" +
+            "燃油发电机消耗燃料的速度：2 为两倍消耗，0.5 让燃料多用一倍时间。范围 0.25 到 100000，0 或更小按 1 计算。");
 
         if (isFirstStart) ImportFromActionSpeed(brewing, cooking, log.Write);
 
@@ -45,12 +49,41 @@ public sealed class Plugin : BasePlugin
         log.Write($"===== Machine Speed {Version} started");
         ShredderPatch.Apply(harmony, Checked(shredder, log.Write), log);
         RationPressPatch.Apply(harmony, Checked(rationPress, log.Write), log);
-        DyeVatPatch.Apply(harmony, Checked(dyeVat, log.Write), log);
         PlantGrowthPatch.Apply(harmony, Checked(plantGrowth, log.Write), log);
         FuelBurnPatch.Apply(harmony, Checked(fuelBurn, log.Write), log);
         DroneTripPatch.Apply(harmony, Checked(droneTrips, log.Write), log);
-        BrewingPatch.Apply(harmony, Checked(brewing, log.Write), log);
-        CookingPatch.Apply(harmony, Checked(cooking, log.Write), log);
+        var cookingSpeed = Checked(cooking, log.Write);
+        var fuel = FuelUse.From(cookingFuel.Value);
+
+        if (fuel.Complaint($"{Section}/{cookingFuel.Definition.Key}") is { } fuelComplaint) log.Write(fuelComplaint);
+
+        CookingPatch.Apply(harmony, cookingSpeed, log);
+        CookingFuelPatch.Apply(harmony, cookingSpeed, fuel, log);
+        StartHourJobs(harmony, brewing, dyeVat, compost, log);
+    }
+
+    /// <summary>Brewing, dyeing and compost are moved along a few times a second by a ticker, added only when one is sped up.</summary>
+    private void StartHourJobs(Harmony harmony, ConfigEntry<float> brewing, ConfigEntry<float> dyeVat, ConfigEntry<float> compost, SpeedLog log)
+    {
+        var brewSpeed = Checked(brewing, log.Write);
+        var dyeSpeed = Checked(dyeVat, log.Write);
+        var compostSpeed = Checked(compost, log.Write);
+
+        HourJobs.Use(brewSpeed, dyeSpeed, compostSpeed, log);
+        BrewingPatch.Apply(harmony, brewSpeed, log);
+        DyeVatPatch.Apply(harmony, dyeSpeed, log);
+        CompostPatch.Apply(compostSpeed, log);
+
+        if (!HourJobs.IsAnyMoved) return;
+
+        try
+        {
+            AddComponent<MachineTicker>();
+        }
+        catch (Exception ex)
+        {
+            log.Write($"could not start the clock for brewing, dyeing and compost, they stay at the game's pace: {ex.Message}");
+        }
     }
 
     private ConfigEntry<float> Bind(string key, string work, string workChinese) =>
