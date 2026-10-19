@@ -6,13 +6,13 @@ Each machine has its own speed. 2 means a job takes half the game time, 0.5 mean
 
 ## Features
 
-- **Shredder** and **Ration Press**: a job takes less game time, down to 1 second. Their panels, and the shredder's item tooltips, show the time a job will really take.
-- **Dye vat**: each bucket takes less time, and a fast vat finishes a bucket in seconds. The vat's panel shows the real time per bucket, for the batch, and left on a running job, to the minute.
+- **Shredder** and **Ration Press**: a job takes less game time, down to 1 second. Their panels, and the shredder's item tooltips, show the time a job will really take. The shredder's clock shows game hours and minutes, the same as the timer over the machine.
+- **Dye vat**: each bucket takes less time, and a fast vat finishes a bucket in seconds. The vat's panel shows the real time per bucket, for the batch, and left on a running job, to the minute, and the timer over the vat shows the real time for the bucket being dyed.
 - **Compost bins**: food in a compost bin turns into compost sooner. Only the bin is sped up; food anywhere else rots at the game's pace.
 - **Plant growth**: plants grow faster or slower. The timer over each plant and the planting panel's estimate show the sped-up time, and plants already growing when the speed changes move to the new speed within a few seconds.
 - **Fuel burn**: how fast fuel generators use up fuel. 2 burns it twice as fast; 0.5 makes a tank last twice as long. The time left on the generator's panel follows it.
 - **Drone trips**: a drone comes back sooner.
-- **Brewing**: a brew takes less time, and a fast brew finishes in seconds. The brewing panel shows the real time a brew will take and the real time left on a running one, to the minute.
+- **Brewing**: a brew takes less time, and a fast brew finishes in seconds. The brewing panel shows the real time a brew will take and the real time left on a running one, to the minute. The timer over the barrel shows the same time.
 - **Cooking** at a stove or hot pot takes less time. It burns the same fuel per dish at any speed.
 - **Cooking fuel**: how much fuel a stove or hot pot uses for each dish. 0.5 is half, 0 uses none.
 - **Takes your old settings**: brewing and cooking used to be in Action Speed. The first time Machine Speed starts, it reads your `Brewing` and `Cooking` values from Action Speed's config and uses them.
@@ -21,6 +21,10 @@ Each machine has its own speed. 2 means a job takes half the game time, 0.5 mean
 Speeds changed on the Mod Manager's Mods screen take effect at once with Exiled's Toolkit installed; a change made in the file applies at the next game start. A shred, ration batch, drone trip or cook that is already running keeps the length it started with. Brews, dye jobs, compost bins, plants and fuel generators follow the new speed straight away, including the ones already running. Machine Speed writes no data of its own into your save and does not edit game files. A job's sped-up length is held by the job, so it can end up in your save. You can remove the mod at any time; jobs started after that take the game's own time again.
 
 All settings are listed in [CONFIG.md](CONFIG.md).
+
+## Known issues
+
+- When you change a speed while a brew or dye job is running, the timer over the machine catches up at the next game hour. The panel shows the new time at once.
 
 ## Install
 
