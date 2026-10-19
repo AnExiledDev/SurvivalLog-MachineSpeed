@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+
+- The brewing barrel's time for a brew and its countdown show the sped-up time, to the minute, and count down live.
+- The dye vat's time per bucket, batch estimate, bucket countdown and time to finish the batch show the sped-up time, to the minute.
+- The timer over each plant shows the sped-up time. Plants that were already growing when the speed changed (or that were planted in an earlier game at another speed) move to the new speed within a few seconds, keeping how far they have grown.
+- The planting panel's growth estimate shows the sped-up time.
+- The shredder's clock before you start it, and the time in each item's tooltip, show the sped-up time.
+
 ## 0.3.0
 
 - The Mods screen links this changelog.

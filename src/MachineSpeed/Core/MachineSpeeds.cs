@@ -158,6 +158,9 @@ public sealed class SpedUpClock
     private int? _lastSeconds;
     private double _carrySeconds;
 
+    /// <summary>Game seconds of extra time built up that have not yet made a whole hour; a countdown counts them as done.</summary>
+    public double CarrySeconds => _carrySeconds;
+
     /// <summary>
     /// The whole hours to move the job on since the last call. The first call, and a clock that went back (a save
     /// loaded), only start counting from now.

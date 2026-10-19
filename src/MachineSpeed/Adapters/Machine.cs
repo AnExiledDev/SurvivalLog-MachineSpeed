@@ -32,6 +32,9 @@ internal sealed class MachineHook
         _installDisplay = installDisplay;
     }
 
+    /// <summary>True once the machine's hooks are in, so its jobs follow its speed (the game's pace included).</summary>
+    public bool IsIn => _state == HookState.In;
+
     /// <summary>Called on the main thread at start and after each change of the machine's speed.</summary>
     public void Use(Core.Speed speed)
     {

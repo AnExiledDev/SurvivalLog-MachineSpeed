@@ -53,11 +53,15 @@ internal static class BrewingPatch
         }
     }
 
-    private static void ScalePanel(BrewPanelData __result)
+    public static Speed Speed => _speed;
+
+    private static void ScalePanel(Furniture __instance, BrewPanelData __result)
     {
         try
         {
             if (__result == null) return;
+
+            TimerPage.ShowingBrew(__instance, __result.TotalHours);
 
             __result.TotalHours = Scaling.Shown(__result.TotalHours, _speed);
             __result.RemainHours = Scaling.Shown(__result.RemainHours, _speed);
@@ -116,11 +120,15 @@ internal static class DyeVatPatch
         }
     }
 
-    private static void ScalePanel(DyePanelData __result)
+    public static Speed Speed => _speed;
+
+    private static void ScalePanel(Furniture __instance, DyePanelData __result)
     {
         try
         {
             if (__result == null) return;
+
+            TimerPage.ShowingDye(__instance, __result.HoursPerBucket, __result.PreviewTotalHours);
 
             __result.HoursPerBucket = Scaling.Shown(__result.HoursPerBucket, _speed);
             __result.PreviewTotalHours = Scaling.Shown(__result.PreviewTotalHours, _speed);

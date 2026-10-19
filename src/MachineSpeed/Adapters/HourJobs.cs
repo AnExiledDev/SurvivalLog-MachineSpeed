@@ -11,6 +11,9 @@ namespace MachineSpeed.Adapters;
 /// <summary>One job the game times in whole hours, moved along a few times a second; false once it is over.</summary>
 internal interface IHourJob
 {
+    /// <summary>Game seconds of sped-up time built up that the game has not been handed yet.</summary>
+    double CarrySeconds { get; }
+
     bool Step(int nowSeconds);
 }
 
@@ -22,6 +25,7 @@ internal static class HourJobs
 {
     private const float TickSeconds = 0.25f;
     private const float BinScanSeconds = 5f;
+    private const float PlantScanSeconds = 5f;
 
     private static readonly Dictionary<(string Kind, long Id), IHourJob> Jobs = new();
     private static HookFailures _failures = HookFailures.Silent;
@@ -29,6 +33,7 @@ internal static class HourJobs
     private static IntPtr _world;
     private static float _nextTick;
     private static float _nextBinScan;
+    private static float _nextPlantScan;
 
     public static void UseLog(SpeedLog log) => _failures = new HookFailures(log.Write, "moving a brew, dye job or compost bin along");
 
@@ -39,6 +44,9 @@ internal static class HourJobs
     {
         if (!Jobs.ContainsKey((kind, id))) Jobs[(kind, id)] = start();
     }
+
+    /// <summary>The time a job is carrying toward its next hour; 0 for a job not being moved along.</summary>
+    public static double Carry(string kind, long id) => Jobs.TryGetValue((kind, id), out var job) ? job.CarrySeconds : 0;
 
     public static void Tick(float realSeconds)
     {
@@ -60,7 +68,14 @@ internal static class HourJobs
                 CompostJob.FindBins(world, () => _compost);
             }
 
+            if (PlantGrowthPatch.IsIn && realSeconds >= _nextPlantScan)
+            {
+                _nextPlantScan = realSeconds + PlantScanSeconds;
+                PlantCaches.Resync(world, PlantGrowthPatch.Speed);
+            }
+
             StepAll(nowSeconds);
+            TimerPage.Tick(realSeconds, nowSeconds);
         }
         catch (Exception ex)
         {
@@ -75,6 +90,8 @@ internal static class HourJobs
         if (pointer == _world) return true;
 
         Jobs.Clear();
+        PlantCaches.Forget();
+        TimerPage.Forget();
         _world = pointer;
 
         return false;
@@ -125,6 +142,8 @@ internal sealed class BrewJob : IHourJob
     private readonly Func<Speed> _speed;
     private readonly SpedUpClock _clock = new();
 
+    public double CarrySeconds => _clock.CarrySeconds;
+
     private BrewJob(Furniture furniture, BrewComponent brew, Func<Speed> speed)
     {
         _furniture = furniture;
@@ -172,6 +191,8 @@ internal sealed class DyeJob : IHourJob
     private readonly DyeComponent _dye;
     private readonly Func<Speed> _speed;
     private readonly SpedUpClock _clock = new();
+
+    public double CarrySeconds => _clock.CarrySeconds;
 
     private DyeJob(Furniture furniture, DyeComponent dye, Func<Speed> speed)
     {
@@ -221,6 +242,8 @@ internal sealed class CompostJob : IHourJob
     private readonly Furniture _bin;
     private readonly Func<Speed> _speed;
     private readonly SpedUpClock _clock = new();
+
+    public double CarrySeconds => _clock.CarrySeconds;
 
     private CompostJob(Furniture bin, Func<Speed> speed)
     {

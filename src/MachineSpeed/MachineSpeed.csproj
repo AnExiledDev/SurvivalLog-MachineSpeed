@@ -24,8 +24,14 @@
     <Reference Include="$(Interop)\HotUpdate.dll" Private="false" />
     <Reference Include="$(Interop)\AOT.dll" Private="false" />
     <Reference Include="$(Interop)\Il2Cppmscorlib.dll" Private="false" />
+    <Reference Include="$(Interop)\R3.dll" Private="false" />
     <Reference Include="$(Interop)\UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="$(Interop)\Vuplex.WebView.dll" Private="false" />
     <Reference Include="$(ToolkitDll)" Private="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="page.js" LogicalName="MachineSpeed.page.js" />
   </ItemGroup>
 
   <!-- What the Mod Manager's Mods screen shows about this mod. -->

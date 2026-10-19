@@ -1,6 +1,7 @@
 using System;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
+using GameCore.HotUpdate.ReduxUI;
 using HarmonyLib;
 using MachineSpeed.Core;
 
@@ -52,11 +53,17 @@ internal static class ShredderPatch
         }
     }
 
+    public static Speed Speed => _speed;
+
     private static void ScalePanel(ShredderPanelData __result)
     {
         try
         {
-            if (__result != null) __result.TimeCost = Scaling.Shown(__result.TimeCost, _speed);
+            if (__result == null) return;
+
+            __result.TotalSeconds = ShredderTimes.IdleSeconds(__result.TotalSeconds, __result.TimeCost, _speed);
+            __result.TimeCost = Scaling.Shown(__result.TimeCost, _speed);
+            TimerPage.Changed();
         }
         catch (Exception ex)
         {
@@ -121,19 +128,25 @@ internal static class RationPressPatch
     }
 }
 
-/// <summary>A plant's growth time is worked out from its config and fertilizer in one place, which every growth tick reads.</summary>
+/// <summary>
+/// A plant's growth time is worked out from its config and fertilizer in one place, which every growth tick reads.
+/// The planting panel works out its own estimate, so that is brought in step too.
+/// </summary>
 internal static class PlantGrowthPatch
 {
     private static Speed _speed = Speed.GamePace;
     private static MachineHook? _hook;
     private static HookFailures _failures = HookFailures.Silent;
     private static FirstUse _first = FirstUse.Silent;
+    private static int _lastEstimate = -1;
 
     public static void Apply(Harmony harmony, SpeedLog log)
     {
         (_failures, _first) = (new HookFailures(log.Write, "speeding up plant growth"), new FirstUse(log.WriteFileOnly));
-        _hook = new MachineHook(log, "plant growth", () =>
-            harmony.Patch(Machine.Method(typeof(PlantComponent), "CalcActualGrowthTime"), postfix: Machine.Patch(typeof(PlantGrowthPatch), nameof(Scale))));
+        PlantCaches.UseLog(log);
+        _hook = new MachineHook(log, "plant growth",
+            () => harmony.Patch(Machine.Method(typeof(PlantComponent), "CalcActualGrowthTime"), postfix: Machine.Patch(typeof(PlantGrowthPatch), nameof(Scale))),
+            () => harmony.Patch(Machine.Method(typeof(Reducer_Web_PlantPanel), "RecalcSelection"), postfix: Machine.Patch(typeof(PlantGrowthPatch), nameof(ScaleEstimate))));
     }
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>
@@ -141,6 +154,29 @@ internal static class PlantGrowthPatch
     {
         _speed = speed;
         _hook?.Use(speed);
+    }
+
+    public static Speed Speed => _speed;
+
+    /// <summary>Plants only follow a speed once the growth hook is in.</summary>
+    public static bool IsIn => _hook?.IsIn == true;
+
+    // The panel only sets its estimate while a seed is picked, so a value this wrote last time is not divided again.
+    private static void ScaleEstimate(State_Web_PlantPanel state)
+    {
+        try
+        {
+            var estimate = state?.ExpectedGrowthSeconds;
+
+            if (estimate == null || estimate.Value == _lastEstimate) return;
+
+            _lastEstimate = Scaling.Seconds(estimate.Value, _speed);
+            estimate.Value = _lastEstimate;
+        }
+        catch (Exception ex)
+        {
+            _failures.Report(ex);
+        }
     }
 
     private static void Scale(ref float __result)
