@@ -25,9 +25,15 @@ All settings are listed in [CONFIG.md](CONFIG.md).
 ## Install
 
 1. Install BepInEx 6 for IL2CPP games and start the game once.
-2. Install [Exiled's Toolkit](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit) 0.4.0 or newer, which applies changed settings at once. Machine Speed does not load without it.
+2. Optional: install [Exiled's Toolkit](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit) 0.4.0 or newer. With it, settings changed on the Mod Manager's Mods screen take effect without restarting the game. Without it, they take effect at the next game start.
 3. Copy `MachineSpeed.dll` into `Survival Log\BepInEx\plugins\`.
 4. Start the game. The config file is created at `BepInEx\config\com.dev.survivallog.machinespeed.cfg`.
+
+## Contact
+
+To reach me directly, message `exiled.dev` on Discord; you can find me in the [official Survival Log Discord](https://discord.gg/MZGg4gQAUe). I'm also on X as [@AnExiledDev](https://x.com/AnExiledDev).
+
+A Survival Log wiki with detailed documentation for all of my mods is coming soon.
 
 ## Building
 

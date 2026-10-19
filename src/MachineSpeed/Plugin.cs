@@ -3,7 +3,6 @@ using System.IO;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Unity.IL2CPP;
-using ExiledToolkit;
 using HarmonyLib;
 using MachineSpeed.Adapters;
 using MachineSpeed.Core;
@@ -11,7 +10,7 @@ using MachineSpeed.Core;
 namespace MachineSpeed;
 
 [BepInPlugin(Guid, "Machine Speed", Version)]
-[BepInDependency(ExiledToolkit.Plugin.Guid, ">=0.4.0")]
+[BepInDependency(OptionalLive.ToolkitGuid, BepInDependency.DependencyFlags.SoftDependency)]
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.machinespeed";
@@ -24,6 +23,8 @@ public sealed class Plugin : BasePlugin
 
     public override void Load()
     {
+        if (!OptionalLive.IsToolkitInstalled) Log.LogInfo(OptionalLive.MissingNote);
+
         var log = new SpeedLog(Log, Path.Combine(Paths.BepInExRootPath, "machine-speed.log"));
 
         log.TrimIfLarge();
@@ -69,7 +70,7 @@ public sealed class Plugin : BasePlugin
         Watch(brewing, BrewingPatch.Use, log);
         Watch(dyeVat, DyeVatPatch.Use, log);
         Watch(compost, CompostPatch.Use, log);
-        LiveSettings.Watch(() =>
+        OptionalLive.Watch(() =>
         {
             var cookingSpeed = Checked(cooking, log.Write);
             var fuel = FuelUse.From(cookingFuel.Value);
@@ -83,7 +84,7 @@ public sealed class Plugin : BasePlugin
     }
 
     private static void Watch(ConfigEntry<float> entry, Action<Speed> use, SpeedLog log) =>
-        LiveSettings.Watch(entry, _ => use(Checked(entry, log.Write)));
+        OptionalLive.Watch(entry, _ => use(Checked(entry, log.Write)));
 
     /// <summary>
     /// Brewing, dyeing and compost are moved along a few times a second by a ticker. It runs even with all three at the
