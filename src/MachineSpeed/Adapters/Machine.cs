@@ -4,44 +4,85 @@ using HarmonyLib;
 
 namespace MachineSpeed.Adapters;
 
-/// <summary>Installs one machine's hooks and logs how it went. Every hook fails soft: a machine it cannot hook keeps the game's pace.</summary>
-internal static class Machine
+/// <summary>
+/// One machine's hooks, put in the first time its speed leaves the game's pace, so a machine never sped up is never
+/// hooked and keeps exactly the game's timing. Once in, the hooks stay: at the game's pace every scaling hands back the
+/// game's own value. Every hook fails soft: a machine it cannot hook keeps the game's pace.
+/// </summary>
+internal sealed class MachineHook
 {
-    /// <summary>
-    /// At the game's pace nothing is hooked, which is what keeps the default timing exactly the game's. The display
-    /// hook only keeps a panel's estimate in step, so losing it is logged and the machine stays sped up.
-    /// </summary>
-    public static void Hook(SpeedLog log, string name, Core.Speed speed, Action install, Action? installDisplay = null)
+    private enum HookState
+    {
+        Waiting,
+        In,
+        Failed,
+    }
+
+    private readonly SpeedLog _log;
+    private readonly string _name;
+    private readonly Action _install;
+    private readonly Action? _installDisplay;
+    private HookState _state = HookState.Waiting;
+
+    public MachineHook(SpeedLog log, string name, Action install, Action? installDisplay = null)
+    {
+        _log = log;
+        _name = name;
+        _install = install;
+        _installDisplay = installDisplay;
+    }
+
+    /// <summary>Called on the main thread at start and after each change of the machine's speed.</summary>
+    public void Use(Core.Speed speed)
     {
         if (speed.IsGamePace)
         {
-            log.Write($"{name} left at the game's pace");
+            _log.Write($"{_name} left at the game's pace");
 
             return;
         }
 
-        try
+        if (_state == HookState.Waiting)
         {
-            install();
-        }
-        catch (Exception ex)
-        {
-            log.Write($"could not hook {name}, it stays at the game's pace: {ex.Message}");
+            Install(speed);
 
             return;
         }
 
-        try
-        {
-            installDisplay?.Invoke();
-            log.Write($"{name} x{speed.Value:0.##}");
-        }
-        catch (Exception ex)
-        {
-            log.Write($"{name} x{speed.Value:0.##}, its panel still shows the game's time ({ex.Message})");
-        }
+        _log.Write(_state == HookState.In ? $"{_name} x{speed.Value:0.##}" : $"{_name} stays at the game's pace, its hook could not go in");
     }
 
+    /// <summary>The display hook only keeps a panel's estimate in step, so losing it is logged and the machine stays sped up.</summary>
+    private void Install(Core.Speed speed)
+    {
+        try
+        {
+            _install();
+        }
+        catch (Exception ex)
+        {
+            _state = HookState.Failed;
+            _log.Write($"could not hook {_name}, it stays at the game's pace: {ex.Message}");
+
+            return;
+        }
+
+        _state = HookState.In;
+
+        try
+        {
+            _installDisplay?.Invoke();
+            _log.Write($"{_name} x{speed.Value:0.##}");
+        }
+        catch (Exception ex)
+        {
+            _log.Write($"{_name} x{speed.Value:0.##}, its panel still shows the game's time ({ex.Message})");
+        }
+    }
+}
+
+internal static class Machine
+{
     public static MethodInfo Method(Type type, string name) =>
         AccessTools.Method(type, name) ?? throw new MissingMethodException($"{type.Name}.{name}");
 

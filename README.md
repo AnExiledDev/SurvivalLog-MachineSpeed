@@ -18,15 +18,16 @@ Each machine has its own speed. 2 means a job takes half the game time, 0.5 mean
 - **Takes your old settings**: brewing and cooking used to be in Action Speed. The first time Machine Speed starts, it reads your `Brewing` and `Cooking` values from Action Speed's config and uses them.
 - **Log file**: what the mod set up at startup, and the first job each machine did with it, go to `BepInEx\machine-speed.log`.
 
-Speed changes apply at the next game start. A shred, ration batch, drone trip or cook that is already running keeps the length it started with. Brews, dye jobs and compost bins follow the new speed from the next game start, including the ones already running. Machine Speed writes no data of its own into your save and does not edit game files. A job's sped-up length is held by the job, so it can end up in your save. You can remove the mod at any time; jobs started after that take the game's own time again.
+Speeds changed on the Mod Manager's Mods screen take effect at once; a change made in the file applies at the next game start. A shred, ration batch, drone trip or cook that is already running keeps the length it started with. Brews, dye jobs, compost bins, plants and fuel generators follow the new speed straight away, including the ones already running. Machine Speed writes no data of its own into your save and does not edit game files. A job's sped-up length is held by the job, so it can end up in your save. You can remove the mod at any time; jobs started after that take the game's own time again.
 
 All settings are listed in [CONFIG.md](CONFIG.md).
 
 ## Install
 
 1. Install BepInEx 6 for IL2CPP games and start the game once.
-2. Copy `MachineSpeed.dll` into `Survival Log\BepInEx\plugins\`.
-3. Start the game. The config file is created at `BepInEx\config\com.dev.survivallog.machinespeed.cfg`.
+2. Install [Exiled's Toolkit](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit) 0.4.0 or newer, which applies changed settings at once. Machine Speed does not load without it.
+3. Copy `MachineSpeed.dll` into `Survival Log\BepInEx\plugins\`.
+4. Start the game. The config file is created at `BepInEx\config\com.dev.survivallog.machinespeed.cfg`.
 
 ## Building
 

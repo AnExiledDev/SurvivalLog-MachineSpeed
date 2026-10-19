@@ -3,6 +3,7 @@ using System.IO;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Unity.IL2CPP;
+using ExiledToolkit;
 using HarmonyLib;
 using MachineSpeed.Adapters;
 using MachineSpeed.Core;
@@ -10,10 +11,11 @@ using MachineSpeed.Core;
 namespace MachineSpeed;
 
 [BepInPlugin(Guid, "Machine Speed", Version)]
+[BepInDependency(ExiledToolkit.Plugin.Guid, ">=0.4.0")]
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.machinespeed";
-    private const string Version = "0.2.0";
+    private const string Version = "0.3.0";
     private const string Section = "Machines";
     private const string ActionSpeedConfig = "com.dev.survivallog.actionspeed.cfg";
 
@@ -47,35 +49,48 @@ public sealed class Plugin : BasePlugin
         var harmony = new Harmony(Guid);
 
         log.Write($"===== Machine Speed {Version} started");
-        ShredderPatch.Apply(harmony, Checked(shredder, log.Write), log);
-        RationPressPatch.Apply(harmony, Checked(rationPress, log.Write), log);
-        PlantGrowthPatch.Apply(harmony, Checked(plantGrowth, log.Write), log);
-        FuelBurnPatch.Apply(harmony, Checked(fuelBurn, log.Write), log);
-        DroneTripPatch.Apply(harmony, Checked(droneTrips, log.Write), log);
-        var cookingSpeed = Checked(cooking, log.Write);
-        var fuel = FuelUse.From(cookingFuel.Value);
+        ShredderPatch.Apply(harmony, log);
+        RationPressPatch.Apply(harmony, log);
+        PlantGrowthPatch.Apply(harmony, log);
+        FuelBurnPatch.Apply(harmony, log);
+        DroneTripPatch.Apply(harmony, log);
+        CookingPatch.Apply(harmony, log);
+        CookingFuelPatch.Apply(harmony, log);
+        BrewingPatch.Apply(harmony, log);
+        DyeVatPatch.Apply(harmony, log);
+        CompostPatch.Apply(log);
+        HourJobs.UseLog(log);
 
-        if (fuel.Complaint($"{Section}/{cookingFuel.Definition.Key}") is { } fuelComplaint) log.Write(fuelComplaint);
+        Watch(shredder, ShredderPatch.Use, log);
+        Watch(rationPress, RationPressPatch.Use, log);
+        Watch(plantGrowth, PlantGrowthPatch.Use, log);
+        Watch(fuelBurn, FuelBurnPatch.Use, log);
+        Watch(droneTrips, DroneTripPatch.Use, log);
+        Watch(brewing, BrewingPatch.Use, log);
+        Watch(dyeVat, DyeVatPatch.Use, log);
+        Watch(compost, CompostPatch.Use, log);
+        LiveSettings.Watch(() =>
+        {
+            var cookingSpeed = Checked(cooking, log.Write);
+            var fuel = FuelUse.From(cookingFuel.Value);
 
-        CookingPatch.Apply(harmony, cookingSpeed, log);
-        CookingFuelPatch.Apply(harmony, cookingSpeed, fuel, log);
-        StartHourJobs(harmony, brewing, dyeVat, compost, log);
+            if (fuel.Complaint($"{Section}/{cookingFuel.Definition.Key}") is { } fuelComplaint) log.Write(fuelComplaint);
+
+            CookingPatch.Use(cookingSpeed);
+            CookingFuelPatch.Use(cookingSpeed, fuel);
+        }, cooking, cookingFuel);
+        StartClock(log);
     }
 
-    /// <summary>Brewing, dyeing and compost are moved along a few times a second by a ticker, added only when one is sped up.</summary>
-    private void StartHourJobs(Harmony harmony, ConfigEntry<float> brewing, ConfigEntry<float> dyeVat, ConfigEntry<float> compost, SpeedLog log)
+    private static void Watch(ConfigEntry<float> entry, Action<Speed> use, SpeedLog log) =>
+        LiveSettings.Watch(entry, _ => use(Checked(entry, log.Write)));
+
+    /// <summary>
+    /// Brewing, dyeing and compost are moved along a few times a second by a ticker. It runs even with all three at the
+    /// game's pace, so speeding one up later needs no restart; with nothing tracked, a tick does nothing.
+    /// </summary>
+    private void StartClock(SpeedLog log)
     {
-        var brewSpeed = Checked(brewing, log.Write);
-        var dyeSpeed = Checked(dyeVat, log.Write);
-        var compostSpeed = Checked(compost, log.Write);
-
-        HourJobs.Use(brewSpeed, dyeSpeed, compostSpeed, log);
-        BrewingPatch.Apply(harmony, brewSpeed, log);
-        DyeVatPatch.Apply(harmony, dyeSpeed, log);
-        CompostPatch.Apply(compostSpeed, log);
-
-        if (!HourJobs.IsAnyMoved) return;
-
         try
         {
             AddComponent<MachineTicker>();

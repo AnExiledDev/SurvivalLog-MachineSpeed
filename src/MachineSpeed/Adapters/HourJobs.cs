@@ -30,14 +30,10 @@ internal static class HourJobs
     private static float _nextTick;
     private static float _nextBinScan;
 
-    public static bool IsAnyMoved { get; private set; }
+    public static void UseLog(SpeedLog log) => _failures = new HookFailures(log.Write, "moving a brew, dye job or compost bin along");
 
-    public static void Use(Speed brewing, Speed dyeVat, Speed compost, SpeedLog log)
-    {
-        _failures = new HookFailures(log.Write, "moving a brew, dye job or compost bin along");
-        _compost = compost;
-        IsAnyMoved = !brewing.IsGamePace || !dyeVat.IsGamePace || !compost.IsGamePace;
-    }
+    /// <summary>Bins already found move on at the new speed from the next tick. Set on the main thread, where the ticker runs.</summary>
+    public static void UseCompost(Speed compost) => _compost = compost;
 
     public static void Track(string kind, long id, Func<IHourJob> start)
     {
@@ -61,7 +57,7 @@ internal static class HourJobs
             if (!_compost.IsGamePace && realSeconds >= _nextBinScan)
             {
                 _nextBinScan = realSeconds + BinScanSeconds;
-                CompostJob.FindBins(world, _compost);
+                CompostJob.FindBins(world, () => _compost);
             }
 
             StepAll(nowSeconds);
@@ -126,10 +122,10 @@ internal sealed class BrewJob : IHourJob
 
     private readonly Furniture _furniture;
     private readonly BrewComponent _brew;
-    private readonly Speed _speed;
+    private readonly Func<Speed> _speed;
     private readonly SpedUpClock _clock = new();
 
-    private BrewJob(Furniture furniture, BrewComponent brew, Speed speed)
+    private BrewJob(Furniture furniture, BrewComponent brew, Func<Speed> speed)
     {
         _furniture = furniture;
         _brew = brew;
@@ -138,7 +134,8 @@ internal sealed class BrewJob : IHourJob
 
     public static void UseLog(SpeedLog log) => _first = new FirstUse(log.WriteFileOnly);
 
-    public static void TrackIfBrewing(Furniture? furniture, Speed speed)
+    /// <summary>The speed is read at every step, so a brew already running follows a change of the setting.</summary>
+    public static void TrackIfBrewing(Furniture? furniture, Func<Speed> speed)
     {
         var brew = furniture == null ? null : AgentTools.GetAgentComponent<BrewComponent>(furniture);
 
@@ -151,7 +148,7 @@ internal sealed class BrewJob : IHourJob
 
         var nowHour = Furniture.GetBrewNowHour();
         var elapsed = nowHour - _brew.StartHour;
-        var moved = _clock.Elapsed(nowSeconds, elapsed, _brew.TotalHours, _speed);
+        var moved = _clock.Elapsed(nowSeconds, elapsed, _brew.TotalHours, _speed());
 
         if (moved == elapsed) return true;
 
@@ -173,10 +170,10 @@ internal sealed class DyeJob : IHourJob
 
     private readonly Furniture _furniture;
     private readonly DyeComponent _dye;
-    private readonly Speed _speed;
+    private readonly Func<Speed> _speed;
     private readonly SpedUpClock _clock = new();
 
-    private DyeJob(Furniture furniture, DyeComponent dye, Speed speed)
+    private DyeJob(Furniture furniture, DyeComponent dye, Func<Speed> speed)
     {
         _furniture = furniture;
         _dye = dye;
@@ -185,7 +182,8 @@ internal sealed class DyeJob : IHourJob
 
     public static void UseLog(SpeedLog log) => _first = new FirstUse(log.WriteFileOnly);
 
-    public static void TrackIfRunning(Furniture? furniture, Speed speed)
+    /// <summary>The speed is read at every step, so a dye job already running follows a change of the setting.</summary>
+    public static void TrackIfRunning(Furniture? furniture, Func<Speed> speed)
     {
         var dye = furniture == null ? null : AgentTools.GetAgentComponent<DyeComponent>(furniture);
 
@@ -199,7 +197,7 @@ internal sealed class DyeJob : IHourJob
         var nowHour = Furniture.GetDyeNowHour();
         var total = _dye.ResultCount * _dye.HoursPerBucket;
         var elapsed = nowHour - _dye.StartHour;
-        var moved = _clock.Elapsed(nowSeconds, elapsed, total, _speed);
+        var moved = _clock.Elapsed(nowSeconds, elapsed, total, _speed());
 
         if (moved == elapsed) return true;
 
@@ -221,10 +219,10 @@ internal sealed class CompostJob : IHourJob
     private static FirstUse _first = FirstUse.Silent;
 
     private readonly Furniture _bin;
-    private readonly Speed _speed;
+    private readonly Func<Speed> _speed;
     private readonly SpedUpClock _clock = new();
 
-    private CompostJob(Furniture bin, Speed speed)
+    private CompostJob(Furniture bin, Func<Speed> speed)
     {
         _bin = bin;
         _speed = speed;
@@ -232,7 +230,7 @@ internal sealed class CompostJob : IHourJob
 
     public static void UseLog(SpeedLog log) => _first = new FirstUse(log.WriteFileOnly);
 
-    public static void FindBins(BattleLogicWorld world, Speed speed)
+    public static void FindBins(BattleLogicWorld world, Func<Speed> speed)
     {
         var furnitures = world._AgentManager?.GetAllFurnitures();
 
@@ -251,7 +249,7 @@ internal sealed class CompostJob : IHourJob
     {
         if (_bin.IsDead) return false;
 
-        var hours = _clock.ExtraHours(nowSeconds, _speed);
+        var hours = _clock.ExtraHours(nowSeconds, _speed());
 
         if (hours == 0) return true;
 
