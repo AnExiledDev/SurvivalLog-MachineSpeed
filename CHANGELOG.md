@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.1
+
+- The timer over a brewing barrel shows the sped-up time. It used to show the game's full time (a day or more) while the brew took seconds.
+- The timer over a dye vat shows the sped-up time for the bucket being dyed.
+- The shredder's clock shows hours and minutes of game time, the same as the timer over the machine. It used to show minutes and seconds, which read like a long wait and jumped when the shred started.
+- Brewing and dye vat panel times count whole minutes the same way as the timers over the machines, so the two always match.
+
 ## 0.4.0
 
 - The brewing barrel's time for a brew and its countdown show the sped-up time, to the minute, and count down live.

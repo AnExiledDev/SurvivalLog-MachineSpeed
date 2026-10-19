@@ -50,6 +50,46 @@ public class CountdownTests
     }
 }
 
+public class HeadBarTests
+{
+    private static readonly Speed Hundred = Speed.From(100f);
+
+    [Fact]
+    public void A_brews_head_bar_counts_down_the_sped_up_time_not_the_games_hours()
+    {
+        // A 30 hour brew 6 hours in, at x100: the bar's whole length is 18 game minutes and 14.4 of them are left.
+        var bar = HeadBar.Job(30, 6 * 3600, Hundred);
+
+        Assert.Equal(30 * 3600 / 100f, bar.Total, 3);
+        Assert.Equal(24 * 3600 / 100f, bar.Total - bar.Elapsed, 3);
+    }
+
+    [Fact]
+    public void A_brew_head_bar_never_runs_past_its_ends()
+    {
+        Assert.Equal(0f, HeadBar.Job(30, -500, Hundred).Elapsed);
+        Assert.Equal(HeadBar.Job(30, 0, Hundred).Total, HeadBar.Job(30, 40 * 3600, Hundred).Elapsed);
+    }
+
+    [Fact]
+    public void A_dye_vats_head_bar_counts_down_the_bucket_being_dyed_at_its_speed()
+    {
+        // 6 hours a bucket, 3 buckets, 7 hours done at x100: the second bucket has 5 of its 6 hours left.
+        var bar = HeadBar.Bucket(6, 3, 7 * 3600, Hundred);
+
+        Assert.Equal(6 * 3600 / 100f, bar.Total, 3);
+        Assert.Equal(5 * 3600 / 100f, bar.Total - bar.Elapsed, 3);
+    }
+
+    [Fact]
+    public void A_dye_vat_whose_last_bucket_is_done_shows_a_full_bar()
+    {
+        var bar = HeadBar.Bucket(6, 3, 18 * 3600, Hundred);
+
+        Assert.Equal(bar.Total, bar.Elapsed);
+    }
+}
+
 public class PlantResyncTests
 {
     [Theory]

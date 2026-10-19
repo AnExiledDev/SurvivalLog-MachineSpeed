@@ -10,9 +10,10 @@
   var state = { shredder: null, brew: null, dye: null };
   var lastJson = '';
 
-  // Game seconds as "H:MM", with days in front when there are any, rounded up so a running job never reads 0:00.
+  // Game seconds as "H:MM", with days in front when there are any. Whole minutes are counted the way the timer over
+  // the machine counts them, so the panel and that timer always read the same.
   function clock(seconds, unitDay) {
-    var minutes = Math.ceil(Math.max(0, seconds) / 60);
+    var minutes = Math.floor(Math.max(0, seconds) / 60);
     var days = Math.floor(minutes / 1440);
     var hours = Math.floor((minutes % 1440) / 60);
     var rest = minutes % 60;
@@ -78,12 +79,23 @@
 
   // ===== Shredder =====
 
+  // The shredder's clock is drawn as game minutes and seconds, so a sped-up shred read like minutes of waiting and
+  // jumped from 2:24 to 0:24 in a second. It is drawn as game hours and minutes instead, like the timer over the
+  // machine and the other panels.
+  function shredderClock(w, original) {
+    return function (seconds) {
+      if (!state.shredder) return original.apply(this, arguments);
+
+      return clock(seconds);
+    };
+  }
+
   // The item tooltip's time is the game's minutes for that item; a sped-up job takes its seconds divided by the speed.
-  function shredderTime(w, original) {
+  function shredderTip(w, original) {
     return function (minutes) {
       if (!state.shredder || !(minutes > 0)) return original.apply(this, arguments);
 
-      return w.mmss(Math.max(1, Math.round(minutes * 60 / state.shredder)));
+      return clock(minutes * 60 / state.shredder);
     };
   }
 
@@ -92,7 +104,7 @@
   var PAGES = [
     { path: '/BrewPanel/', draw: 'renderFerment', fix: fixBrew },
     { path: '/DyePanel/', draw: 'renderProd', fix: fixDye },
-    { path: '/Shredder/', draw: 'fmtDur', wrap: shredderTime }
+    { path: '/Shredder/', draw: 'renderPanel', wraps: { mmss: shredderClock, fmtDur: shredderTip } }
   ];
 
   var patched = [];
@@ -122,8 +134,8 @@
 
     w[MARK] = true;
 
-    if (page.wrap) {
-      w[page.draw] = page.wrap(w, original);
+    if (page.wraps) {
+      wrapAll(w, page);
 
       return;
     }
@@ -142,6 +154,19 @@
     // The game may have drawn the panel before it was wrapped.
     try {
       page.fix(w);
+    } catch (e) {}
+  }
+
+  // A page whose helpers are wrapped is drawn again by its own draw function, which now goes through them.
+  function wrapAll(w, page) {
+    for (var name in page.wraps) {
+      if (typeof w[name] === 'function') w[name] = page.wraps[name](w, w[name]);
+    }
+
+    patched.push({ win: w, draw: page.draw });
+
+    try {
+      w[page.draw]();
     } catch (e) {}
   }
 

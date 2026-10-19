@@ -26,7 +26,11 @@ internal static class BrewingPatch
                 harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.OnBrewStart)), postfix: Machine.Patch(typeof(BrewingPatch), nameof(Started)));
                 harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.TryFinishBrew)), postfix: Machine.Patch(typeof(BrewingPatch), nameof(Checked)));
             },
-            () => harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.BuildBrewPanelData)), postfix: Machine.Patch(typeof(BrewingPatch), nameof(ScalePanel))));
+            () =>
+            {
+                harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.BuildBrewPanelData)), postfix: Machine.Patch(typeof(BrewingPatch), nameof(ScalePanel)));
+                harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.SyncBrewHeadBar)), postfix: Machine.Patch(typeof(BrewingPatch), nameof(ScaleHeadBar)));
+            });
     }
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>
@@ -71,6 +75,31 @@ internal static class BrewingPatch
             _failures.Report(ex);
         }
     }
+
+    /// <summary>
+    /// The game sends the barrel's timer the brew's game hours, at the start and every hour, so a sped-up brew read as
+    /// days. It is sent again with the sped-up time whenever the game has just sent a running brew's.
+    /// </summary>
+    private static void ScaleHeadBar(Furniture __instance)
+    {
+        try
+        {
+            if (_speed.IsGamePace || __instance._brewHeadBarState != GameHeadBar.Running) return;
+
+            var brew = AgentTools.GetAgentComponent<BrewComponent>(__instance);
+
+            if (brew == null || !brew.IsBrewing()) return;
+
+            var nowHour = Furniture.GetBrewNowHour();
+            var done = Countdown.Done(nowHour - brew.StartHour, Furniture.GetDyeNowSeconds(), nowHour, HourJobs.Carry("brew", __instance.InstanceId));
+
+            GameHeadBar.Show(__instance, HeadBar.Job(brew.TotalHours, done, _speed), Furniture.GetBrewProductName(brew.ResultItemId));
+        }
+        catch (Exception ex)
+        {
+            _failures.Report(ex);
+        }
+    }
 }
 
 /// <summary>
@@ -93,7 +122,11 @@ internal static class DyeVatPatch
                 harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.OnDyeStart)), postfix: Machine.Patch(typeof(DyeVatPatch), nameof(Started)));
                 harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.TryFinishDye)), postfix: Machine.Patch(typeof(DyeVatPatch), nameof(Checked)));
             },
-            () => harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.BuildDyePanelData)), postfix: Machine.Patch(typeof(DyeVatPatch), nameof(ScalePanel))));
+            () =>
+            {
+                harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.BuildDyePanelData)), postfix: Machine.Patch(typeof(DyeVatPatch), nameof(ScalePanel)));
+                harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.SyncDyeHeadBar)), postfix: Machine.Patch(typeof(DyeVatPatch), nameof(ScaleHeadBar)));
+            });
     }
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>
@@ -140,6 +173,41 @@ internal static class DyeVatPatch
             _failures.Report(ex);
         }
     }
+
+    /// <summary>
+    /// The game sends the vat's timer the bucket's game hours, so a sped-up bucket read as hours. It is sent again with
+    /// the sped-up time whenever the game has just sent a running bucket's (not when a bucket is ready to take out).
+    /// </summary>
+    private static void ScaleHeadBar(Furniture __instance)
+    {
+        try
+        {
+            if (_speed.IsGamePace || __instance._dyeHeadBarState != GameHeadBar.Running) return;
+
+            var dye = AgentTools.GetAgentComponent<DyeComponent>(__instance);
+
+            if (dye == null || !dye.IsRunning()) return;
+
+            var nowHour = Furniture.GetDyeNowHour();
+            var done = Countdown.Done(nowHour - dye.StartHour, Furniture.GetDyeNowSeconds(), nowHour, HourJobs.Carry("dye", __instance.InstanceId));
+
+            GameHeadBar.Show(__instance, HeadBar.Bucket(dye.HoursPerBucket, dye.ResultCount, done, _speed), Furniture.GetDyeProductName(dye.ResultItemId));
+        }
+        catch (Exception ex)
+        {
+            _failures.Report(ex);
+        }
+    }
+}
+
+/// <summary>The timer over a machine, which the game draws from a plant growth event with its length and progress.</summary>
+internal static class GameHeadBar
+{
+    /// <summary>The value the game keeps for a machine whose timer is showing a running job.</summary>
+    public const int Running = 1;
+
+    public static void Show(Furniture machine, HeadBar bar, string name) =>
+        EventDispatcherTools.NotifyInstance<float, float, int, string>(machine.ShowInstanceId, EnumNotify_Plant.PlantGrowthUpdate, bar.Total, bar.Elapsed, 0, name);
 }
 
 /// <summary>Compost bins have no start to hook; the ticker finds them. This hands the ticker the speed and logs it.</summary>

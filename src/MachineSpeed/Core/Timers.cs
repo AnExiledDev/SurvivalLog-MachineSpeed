@@ -43,6 +43,32 @@ public static class Countdown
 }
 
 /// <summary>
+/// The timer over a brewing barrel or dye vat: its whole length and how much of it has run, in game seconds at the
+/// machine's speed. The game sends its own hours there, so a sped-up job read as days while it took seconds.
+/// </summary>
+public readonly record struct HeadBar(float Total, float Elapsed)
+{
+    private const double SecondsPerHour = 3600.0;
+
+    /// <summary>A job of <paramref name="totalHours"/> with <paramref name="done"/> game seconds of it done.</summary>
+    public static HeadBar Job(int totalHours, double done, Speed speed)
+    {
+        var total = totalHours * SecondsPerHour;
+
+        return new HeadBar((float)(total / speed.Value), (float)(Math.Clamp(done, 0, total) / speed.Value));
+    }
+
+    /// <summary>The bucket being dyed now; full once the last bucket is done.</summary>
+    public static HeadBar Bucket(int hoursPerBucket, int buckets, double done, Speed speed)
+    {
+        var total = (float)(hoursPerBucket * SecondsPerHour / speed.Value);
+        var left = (float)Countdown.BucketRemaining(hoursPerBucket, buckets, done, speed);
+
+        return new HeadBar(total, Math.Clamp(total - left, 0f, total));
+    }
+}
+
+/// <summary>
 /// A plant keeps its growth time from when it was planted, so one planted at another speed grows, and counts down on
 /// its head bar, at that old speed. Its time is put right by keeping how far it has grown and changing what it grows
 /// toward. Small differences are the game's own (power, the greenhouse) and are left to it.
