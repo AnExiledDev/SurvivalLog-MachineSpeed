@@ -27,6 +27,7 @@ Works in English and Chinese.
 [list]
 [*]When you change a speed while a brew or dye job is running, the timer over the machine catches up at the next game hour. The panel shows the new time at once.[/*]
 [*]A change to [font=Courier New]CookingFuel[/font] while a dish is cooking applies to the whole dish, including the part already cooked.[/*]
+[*]Change [font=Courier New]Cooking[/font] between games only when no dish is cooking. A dish saved mid-cook and loaded at another speed burns its fuel at the new speed, so it can use a lot of fuel at once (or very little).[/*]
 [*]Plants planted at another speed keep it until harvest when [font=Courier New]PlantGrowth[/font] is set back to 1 between games. Within a game, setting it back to 1 moves them to the game's pace.[/*]
 [/list]
 
@@ -88,6 +89,7 @@ Machine Speed 不会往存档里写入自己的数据，也不会修改游戏文
 [list]
 [*]在酿酒或染色进行中改变速度时，机器上方的计时器要到下一个游戏整点才会更新。面板会立即显示新的时间。[/*]
 [*]烹饪进行中改动 [font=Courier New]CookingFuel[/font] 时，新数值会作用于整道菜，包括已经烹饪过的部分。[/*]
+[*]请只在没有菜在烹饪时，于两次游戏之间改动 [font=Courier New]Cooking[/font]。烹饪中途存档的菜在以其他速度读档后，会按新速度消耗燃料，可能一下子用掉很多燃料（或用得很少）。[/*]
 [*]如果在两次游戏之间把 [font=Courier New]PlantGrowth[/font] 改回 1，按其他速度种下的植物会保持原来的速度直到收获。在游戏中改回 1 时，它们会恢复游戏原本的速度。[/*]
 [/list]
 

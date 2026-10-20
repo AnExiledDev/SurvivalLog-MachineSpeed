@@ -21,5 +21,8 @@ public sealed class CookSpeeds
     /// <summary>A stove or hot pot started a cook at this speed; its earlier cook is done with.</summary>
     public void Started(long cook, Speed speed) => _started[cook] = speed;
 
+    /// <summary>Another world was loaded, so no cook seen so far is still running.</summary>
+    public void Forget() => _started.Clear();
+
     public Speed For(long cook) => _started.TryGetValue(cook, out var speed) ? speed : _unseen;
 }

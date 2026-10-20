@@ -317,8 +317,15 @@ internal static class CookingPatch
         _hook?.Use(speed);
     }
 
-    /// <summary>The speed a stove or hot pot's current cook started at.</summary>
-    public static Speed SpeedOf(CookingComponent cook) => _cooks?.For(cook.Pointer.ToInt64()) ?? _speed;
+    /// <summary>
+    /// The speed a stove or hot pot's current cook started at. Without the hook every cook keeps the game's length,
+    /// so it burns at the game's pace.
+    /// </summary>
+    public static Speed SpeedOf(CookingComponent cook) =>
+        _hook?.IsIn == true ? _cooks?.For(cook.Pointer.ToInt64()) ?? _speed : Speed.GamePace;
+
+    /// <summary>Another world was loaded; its stoves can reuse the old world's addresses.</summary>
+    public static void Forget() => _cooks?.Forget();
 
     private static void Scale(CookingComponent __instance, ref float cookDuration)
     {

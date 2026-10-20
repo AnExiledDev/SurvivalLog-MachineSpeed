@@ -26,6 +26,7 @@ All settings are listed in [CONFIG.md](CONFIG.md).
 
 - When you change a speed while a brew or dye job is running, the timer over the machine catches up at the next game hour. The panel shows the new time at once.
 - A change to `CookingFuel` while a dish is cooking applies to the whole dish, including the part already cooked.
+- Change `Cooking` between games only when no dish is cooking. A dish saved mid-cook and loaded at another speed burns its fuel at the new speed, so it can use a lot of fuel at once (or very little).
 - Plants planted at another speed keep it until harvest when `PlantGrowth` is set back to 1 between games. Within a game, setting it back to 1 moves them to the game's pace.
 
 ## Install

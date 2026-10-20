@@ -287,12 +287,27 @@ public class CookSpeedsTests
         // The game owes progress x length x rate in fuel; a cook started at x1 must keep the x1 rate when the speed goes
         // to x100, or the fuel already owed is charged a hundred times over in one tick.
         var cooks = new CookSpeeds(Speed.GamePace);
-        cooks.Started(Stove, Speed.GamePace);
-        cooks.Started(2, Speed.From(100f));
+        var fast = Speed.From(100f);
+        cooks.Started(Stove, fast);
+        cooks.Started(2, Speed.GamePace);
 
         var rate = Scaling.CookingFuelRate(0.5f, cooks.For(Stove), FuelUse.GameAmount);
 
-        Assert.Equal(0.5f, rate);
+        Assert.Equal(Scaling.CookingFuelRate(0.5f, fast, FuelUse.GameAmount), rate);
+        Assert.NotEqual(0.5f, rate);
+    }
+
+    [Fact]
+    public void A_cook_in_another_loaded_world_does_not_take_a_speed_from_the_last_one()
+    {
+        // A stove in the next save can sit at the same address as one in the last save.
+        var startSpeed = Speed.From(4f);
+        var cooks = new CookSpeeds(startSpeed);
+        cooks.Started(Stove, Speed.From(100f));
+
+        cooks.Forget();
+
+        Assert.Same(startSpeed, cooks.For(Stove));
     }
 
     [Fact]

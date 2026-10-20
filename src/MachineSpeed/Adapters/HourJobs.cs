@@ -92,6 +92,7 @@ internal static class HourJobs
         Jobs.Clear();
         PlantCaches.Forget();
         TimerPage.Forget();
+        CookingPatch.Forget();
         _world = pointer;
 
         return false;
