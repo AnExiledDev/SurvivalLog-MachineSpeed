@@ -138,7 +138,6 @@ internal static class PlantGrowthPatch
     private static MachineHook? _hook;
     private static HookFailures _failures = HookFailures.Silent;
     private static FirstUse _first = FirstUse.Silent;
-    private static int _lastEstimate = -1;
 
     public static void Apply(Harmony harmony, SpeedLog log)
     {
@@ -161,17 +160,18 @@ internal static class PlantGrowthPatch
     /// <summary>Plants only follow a speed once the growth hook is in.</summary>
     public static bool IsIn => _hook?.IsIn == true;
 
-    // The panel only sets its estimate while a seed is picked, so a value this wrote last time is not divided again.
-    private static void ScaleEstimate(State_Web_PlantPanel state)
+    // The panel only writes its estimate when the picked seed is in its list; otherwise the value is the one this
+    // wrote last time and must not be divided again.
+    private static void ScaleEstimate(State_Web_PlantPanel state, int seedIdx)
     {
         try
         {
             var estimate = state?.ExpectedGrowthSeconds;
+            var seeds = state?.Seeds;
 
-            if (estimate == null || estimate.Value == _lastEstimate) return;
+            if (estimate == null || seeds == null || seedIdx < 0 || seedIdx >= seeds.Count) return;
 
-            _lastEstimate = Scaling.Seconds(estimate.Value, _speed);
-            estimate.Value = _lastEstimate;
+            estimate.Value = Scaling.Seconds(estimate.Value, _speed);
         }
         catch (Exception ex)
         {
@@ -297,6 +297,7 @@ internal static class DroneTripPatch
 internal static class CookingPatch
 {
     private static Speed _speed = Speed.GamePace;
+    private static CookSpeeds? _cooks;
     private static MachineHook? _hook;
     private static HookFailures _failures = HookFailures.Silent;
     private static FirstUse _first = FirstUse.Silent;
@@ -312,10 +313,14 @@ internal static class CookingPatch
     public static void Use(Speed speed)
     {
         _speed = speed;
+        _cooks ??= new CookSpeeds(speed);
         _hook?.Use(speed);
     }
 
-    private static void Scale(ref float cookDuration)
+    /// <summary>The speed a stove or hot pot's current cook started at.</summary>
+    public static Speed SpeedOf(CookingComponent cook) => _cooks?.For(cook.Pointer.ToInt64()) ?? _speed;
+
+    private static void Scale(CookingComponent __instance, ref float cookDuration)
     {
         try
         {
@@ -324,6 +329,7 @@ internal static class CookingPatch
             var duration = Scaling.Duration(gameDuration, _speed);
 
             cookDuration = duration;
+            _cooks?.Started(__instance.Pointer.ToInt64(), _speed);
             _first.Note(() => $"first cook: game {gameDuration:0.##}s, now {duration:0.##}s");
         }
         catch (Exception ex)
@@ -335,11 +341,10 @@ internal static class CookingPatch
 
 /// <summary>
 /// A cook burns fuel by how far along it is times its length, so a shorter cook would burn less. The fuel rate is
-/// raised by the cooking speed to undo that, then set by the player's fuel amount.
+/// raised by the speed the cook started at to undo that, then set by the player's fuel amount.
 /// </summary>
 internal static class CookingFuelPatch
 {
-    private static Speed _cooking = Speed.GamePace;
     private static FuelUse _fuel = FuelUse.GameAmount;
     private static HookFailures _failures = HookFailures.Silent;
     private static FirstUse _first = FirstUse.Silent;
@@ -359,7 +364,7 @@ internal static class CookingFuelPatch
     /// </summary>
     public static void Use(Speed cooking, FuelUse fuel)
     {
-        (_cooking, _fuel) = (cooking, fuel);
+        _fuel = fuel;
 
         if (_harmony == null || _log == null) return;
 
@@ -391,13 +396,13 @@ internal static class CookingFuelPatch
         }
     }
 
-    private static void ScaleRate(ref float fuelRate)
+    private static void ScaleRate(CookingComponent __instance, ref float fuelRate)
     {
         try
         {
             var gameRate = fuelRate;
 
-            var rate = Scaling.CookingFuelRate(gameRate, _cooking, _fuel);
+            var rate = Scaling.CookingFuelRate(gameRate, CookingPatch.SpeedOf(__instance), _fuel);
 
             fuelRate = rate;
             _first.Note(() => $"first cooking fuel: game rate {gameRate:0.###}, now {rate:0.###}");

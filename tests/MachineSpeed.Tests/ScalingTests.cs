@@ -276,3 +276,44 @@ public class ConfigTextTests
         Assert.False(ConfigText.HasSection("## [Machines] is new\n[Other]\n", "Machines"));
     }
 }
+
+public class CookSpeedsTests
+{
+    private const long Stove = 1;
+
+    [Fact]
+    public void A_speed_change_mid_cook_leaves_that_cooks_fuel_per_dish_alone()
+    {
+        // The game owes progress x length x rate in fuel; a cook started at x1 must keep the x1 rate when the speed goes
+        // to x100, or the fuel already owed is charged a hundred times over in one tick.
+        var cooks = new CookSpeeds(Speed.GamePace);
+        cooks.Started(Stove, Speed.GamePace);
+        cooks.Started(2, Speed.From(100f));
+
+        var rate = Scaling.CookingFuelRate(0.5f, cooks.For(Stove), FuelUse.GameAmount);
+
+        Assert.Equal(0.5f, rate);
+    }
+
+    [Fact]
+    public void The_next_cook_on_the_same_stove_burns_at_its_own_speed()
+    {
+        var cooks = new CookSpeeds(Speed.GamePace);
+        var fast = Speed.From(100f);
+        cooks.Started(Stove, Speed.GamePace);
+
+        cooks.Started(Stove, fast);
+
+        Assert.Same(fast, cooks.For(Stove));
+    }
+
+    [Fact]
+    public void A_cook_it_never_saw_start_burns_at_the_speed_the_game_started_with()
+    {
+        var startSpeed = Speed.From(4f);
+        var cooks = new CookSpeeds(startSpeed);
+        cooks.Started(Stove, Speed.From(100f));
+
+        Assert.Same(startSpeed, cooks.For(2));
+    }
+}

@@ -6,6 +6,9 @@
 - The timer over a dye vat shows the sped-up time for the bucket being dyed.
 - The shredder's clock shows hours and minutes of game time, the same as the timer over the machine. It used to show minutes and seconds, which read like a long wait and jumped when the shred started.
 - Brewing and dye vat panel times count whole minutes the same way as the timers over the machines, so the two always match.
+- Changing the cooking speed while a dish is cooking no longer burns a pile of fuel at once (or makes the rest of the dish free). A dish burns fuel at the speed it started with.
+- The planting panel's estimate is sped up for every seed you pick, including one whose game time matched the last estimate shown.
+- A shredder panel that was already open shows the sped-up clock straight away.
 
 ## 0.4.0
 

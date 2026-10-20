@@ -104,7 +104,7 @@
   var PAGES = [
     { path: '/BrewPanel/', draw: 'renderFerment', fix: fixBrew },
     { path: '/DyePanel/', draw: 'renderProd', fix: fixDye },
-    { path: '/Shredder/', draw: 'renderPanel', wraps: { mmss: shredderClock, fmtDur: shredderTip } }
+    { path: '/Shredder/', draw: 'renderProc', wraps: { mmss: shredderClock, fmtDur: shredderTip } }
   ];
 
   var patched = [];
