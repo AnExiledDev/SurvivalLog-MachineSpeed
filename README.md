@@ -29,12 +29,24 @@ All settings are listed in [CONFIG.md](CONFIG.md).
 - Change `Cooking` between games only when no dish is cooking. A dish saved mid-cook and loaded at another speed burns its fuel at the new speed, so it can use a lot of fuel at once (or very little).
 - Plants planted at another speed keep it until harvest when `PlantGrowth` is set back to 1 between games. Within a game, setting it back to 1 moves them to the game's pace.
 
+## Requirements
+
+- Survival Log 1.1.18902. Built for this version; a game update can break it until the mod is updated.
+- The [BepInEx Pack for Survival Log](https://www.nexusmods.com/survivallog/mods/12), the BepInEx 6 (IL2CPP) build for the game.
+- Optional: [Exiled's Toolkit](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit) 0.4.0 or newer. With it, settings changed on the Mod Manager's Mods screen take effect without restarting the game. Without it, they take effect at the next game start.
+
 ## Install
 
-1. Install BepInEx 6 for IL2CPP games and start the game once.
-2. Optional: install [Exiled's Toolkit](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit) 0.4.0 or newer. With it, settings changed on the Mod Manager's Mods screen take effect without restarting the game. Without it, they take effect at the next game start.
-3. Copy `MachineSpeed.dll` into `Survival Log\BepInEx\plugins\`.
-4. Start the game. The config file is created at `BepInEx\config\com.dev.survivallog.machinespeed.cfg`.
+1. Install the [BepInEx Pack for Survival Log](https://www.nexusmods.com/survivallog/mods/12) (if no other mods were installed before, start the game once so BepInEx finishes setup, then quit).
+2. Optional, to change settings without a restart: install Exiled's Toolkit. Download `ExiledToolkit-x.y.z.zip` from [its latest release](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit/releases/latest) or from [Nexus Mods](https://www.nexusmods.com/survivallog/mods/61), and extract it into the game folder (the folder with `SurvivalLog.exe`).
+3. Download `MachineSpeed-x.y.z.zip` from the [latest release](https://github.com/AnExiledDev/SurvivalLog-MachineSpeed/releases/latest).
+4. Extract the zip into the game folder (the folder with `SurvivalLog.exe`). It holds a `BepInEx` folder, so the DLL lands in the right place. When asked, merge the folders. The result should be:
+   `C:\Program Files (x86)\Steam\steamapps\common\Survival Log\BepInEx\plugins\MachineSpeed.dll`
+5. Start the game. The config file is created at `BepInEx\config\com.dev.survivallog.machinespeed.cfg`.
+
+## Uninstall
+
+Delete `MachineSpeed.dll` from the `BepInEx\plugins` folder. For a clean slate, also delete `BepInEx\config\com.dev.survivallog.machinespeed.cfg` and, if it exists, `BepInEx\machine-speed.log`.
 
 ## Contact
 
