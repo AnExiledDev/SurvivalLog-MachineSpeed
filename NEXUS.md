@@ -1,5 +1,5 @@
 Name: Machine Speed
-Summary: Sets how fast the machines at your base work: the shredder, the Ration Press, the dye vat, compost bins, plant growth, fuel generators, drone trips, brewing and cooking, each with its own speed. 设置基地里各台机器的工作速度：粉碎机、口粮压制机、染料桶、堆肥箱、植物生长、燃油发电机、无人机出行、酿酒和烹饪，每项都可单独设置。
+Summary: Choose how fast each machine at your base works: the shredder, Ration Press, dye vat, compost bins, plant growth, fuel burn, drone trips, brewing and cooking, each on its own. Jobs can be close to instant, panels and timers show the real time left, and at the default of 1 the mod leaves that machine alone.
 
 Description (BBCode):
 Machine Speed lets you choose how fast each machine at your base works. 2 means a job takes half the game time, 0.5 means twice as long. Speeds go up to 100000, so a job can be close to instant: the shortest job is 1 game second. Every speed defaults to 1, and at 1 the mod does not touch that machine at all, so you only change what you set.
