@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.0
+
+- A Machines button in the tool column opens a window listing every machine at home: what it is making, time left, finish time, and which are idle, finished or out of fuel. The button shows how many need you.
+- A Rush button on a running job finishes it now for survival points: `RushPointsPerHour` for each game hour left, at least 1 point.
+- With Exiled's Toolkit installed, a notice pops up when a machine finishes or a generator runs out of fuel. Clicking it opens the Machines window. `Toasts` turns them off.
+- `FinishClock` makes the timers show the game time a job finishes instead of the time left.
+- `Preset` sets every machine speed at once: Vanilla, Relaxed (2x), Fast (5x) or Instant. Custom keeps each machine's own speed.
+- `FollowDayLength` speeds machines up to match Day Length, so they keep their real-time pace on a longer day.
+- New `[Amounts]` settings: more output from the shredder, Ration Press, brewing, compost bins and harvests; more bottles per brew; faster robot charging; stronger fridges and freezers; more power per unit of generator fuel; and less (or no) wear on defense devices.
+- Made for Survival Log 1.1.19131.
+
 ## 0.4.2
 
 - After a game update, a hook that can no longer be placed is logged as an error, so the Mod Manager can mark the mod as maybe needing an update.

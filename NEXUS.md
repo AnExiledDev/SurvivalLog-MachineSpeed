@@ -1,5 +1,5 @@
 Name: Machine Speed
-Summary: Choose how fast each machine at your base works: the shredder, Ration Press, dye vat, compost bins, plant growth, fuel burn, drone trips, brewing and cooking, each on its own. Jobs can be close to instant, panels and timers show the real time left, and at the default of 1 the mod leaves that machine alone.
+Summary: Choose how fast each machine at your base works and how much it makes: shredder, Ration Press, dye vat, compost, plants, generators, drones, brewing and cooking. A Machines window lists every job and its time left, with done notices, a finish clock, speed presets and a Rush button that spends survival points to finish a job now. At 1, a machine is left alone.
 
 Description (BBCode):
 Machine Speed lets you choose how fast each machine at your base works. 2 means a job takes half the game time, 0.5 means twice as long. Speeds go up to 100000, so a job can be close to instant: the shortest job is 1 game second. Every speed defaults to 1, and at 1 the mod does not touch that machine at all, so you only change what you set.
@@ -15,6 +15,13 @@ Machine Speed lets you choose how fast each machine at your base works. 2 means 
 [*][b]Brewing[/b]: a brew takes less time, and a fast brew finishes in seconds. The brewing panel and the timer over the barrel show the real time a brew will take and the real time left on a running one, to the minute.[/*]
 [*][b]Cooking[/b] at a stove or hot pot takes less time. It burns the same fuel per dish at any speed.[/*]
 [*][b]Cooking fuel[/b]: how much fuel a stove or hot pot uses for each dish. 0.5 is half, 0 uses none.[/*]
+[*][b]Presets[/b]: [font=Courier New]Preset[/font] sets every speed at once: Vanilla, Relaxed (2x), Fast (5x) or Instant.[/*]
+[*][b]Follow Day Length[/b]: with the Day Length mod, [font=Courier New]FollowDayLength[/font] keeps machines at their real-time pace on longer or shorter days.[/*]
+[*][b]Amounts[/b]: more output from the shredder, Ration Press, brewing, compost bins and harvests; bigger brews; faster robot charging; stronger fridges and freezers; more power per unit of generator fuel; and less wear on defense devices.[/*]
+[*][b]Machines window[/b]: a Machines button in the tool column lists every machine at home with what it is making, the time left and when it finishes. Its badge counts the machines that need you. Esc closes the window.[/*]
+[*][b]Rush[/b]: a Rush button in the Machines window finishes a running job now for survival points, 0.25 per game hour left by default, at least 1. Compost bins, plants, generators and paused jobs cannot be rushed.[/*]
+[*][b]Done notices[/b]: with Exiled's Toolkit, a notice pops up when a machine finishes, a drone comes back or a generator runs out of fuel. Click it to open the Machines window.[/*]
+[*][b]Finish clock[/b]: [font=Courier New]FinishClock[/font] shows the game time a job finishes instead of the time left.[/*]
 [*][b]Takes your old settings[/b]: brewing and cooking used to be in Action Speed. The first time Machine Speed starts, it reads your [font=Courier New]Brewing[/font] and [font=Courier New]Cooking[/font] values from Action Speed's config and uses them.[/*]
 [/list]
 A shred, ration batch, drone trip or cook that is already running keeps the length it started with. Brews, dye jobs, compost bins, plants and fuel generators follow a new speed straight away, including the ones already running.
@@ -29,13 +36,20 @@ Works in English and Chinese.
 [*]A change to [font=Courier New]CookingFuel[/font] while a dish is cooking applies to the whole dish, including the part already cooked.[/*]
 [*]Change [font=Courier New]Cooking[/font] between games only when no dish is cooking. A dish saved mid-cook and loaded at another speed burns its fuel at the new speed, so it can use a lot of fuel at once (or very little).[/*]
 [*]Plants planted at another speed keep it until harvest when [font=Courier New]PlantGrowth[/font] is set back to 1 between games. Within a game, setting it back to 1 moves them to the game's pace.[/*]
+[*]Fridges in a cold room use whichever is colder, the room or the fridge; [font=Courier New]FridgeStrength[/font] does not stack with the room's cold.[/*]
+[*]The wave report's wear line still counts the game's own wear when [font=Courier New]EquipmentWear[/font] is changed.[/*]
+[*]Compost that does not fit in the bin with [font=Courier New]CompostOutput[/font] above 1 is lost.[/*]
+[*]The Ration Press panel shows the game's output before [font=Courier New]RationPressOutput[/font]; the batch gives the multiplied amount.[/*]
+[*]A rushed job also shows its done notice.[/*]
+[*]With [font=Courier New]FinishClock[/font] on, the game's own shredder, brewing and dye panels still show the time left.[/*]
 [/list]
 
 [size=5]Requirements[/size]
 [list]
 [*]Survival Log 1.1.19131. A game update can break it until the mod is updated.[/*]
 [*][url=https://www.nexusmods.com/survivallog/mods/12]BepInEx for Survival Log[/url] (BepInEx 6.0.0-be.788, IL2CPP). Install it first.[/*]
-[*]Optional: [url=https://www.nexusmods.com/survivallog/mods/61]Exiled's Toolkit[/url] 0.4.0 or newer. With it, settings changed on the Mod Manager's Mods screen take effect without restarting the game. Without it, they take effect at the next game start.[/*]
+[*]Optional: [url=https://www.nexusmods.com/survivallog/mods/61]Exiled's Toolkit[/url] 0.4.0 or newer. With it, settings changed on the Mod Manager's Mods screen take effect without restarting the game. Without it, they take effect at the next game start. It also shows the done notices.[/*]
+[*]Optional: Day Length, for [font=Courier New]FollowDayLength[/font].[/*]
 [/list]
 
 [size=5]Installation[/size]
@@ -77,6 +91,13 @@ Machine Speed 让你设置基地里每台机器的工作速度。2 表示一项�
 [*][b]酿酒[/b]：酿一次酒花的时间更少，速度够快时几秒就能酿好。酿酒面板和酿酒桶上方的计时器会显示一次酿造实际要花的时间，以及正在酿造的酒实际还剩多少时间，精确到分钟。[/*]
 [*]在燃气灶或火锅上[b]烹饪[/b]花的时间更少。无论速度多快，每道菜消耗的燃料都一样。[/*]
 [*][b]烹饪燃料[/b]：燃气灶或火锅每做一道菜消耗多少燃料。0.5 是一半，0 表示不消耗。[/*]
+[*][b]预设[/b]：[font=Courier New]Preset[/font] 一次设置所有速度：Vanilla（原速）、Relaxed（两倍）、Fast（五倍）或 Instant（几乎立即完成）。[/*]
+[*][b]跟随昼夜时长[/b]：装了「昼夜时长」模组时，[font=Courier New]FollowDayLength[/font] 让机器在一天变长或变短时保持现实时间里的工作节奏。[/*]
+[*][b]产量[/b]：粉碎机、口粮压制机、酿酒、堆肥箱和收获的产出更多；一次酿得更多；机器人充电更快；冰箱和冰柜保鲜更强；燃油发电机每份燃料发电更多；防御装置损耗更少。[/*]
+[*][b]机器总览窗口[/b]：工具栏中的「机器总览」按钮列出基地里的所有机器，显示正在制作什么、剩余时间和完成时间。按钮上的数字表示需要你处理的机器数量。按 Esc 关闭窗口。[/*]
+[*][b]加速完成[/b]：「机器总览」窗口中的「加速完成」按钮花费生存点立即完成正在进行的工作，默认每剩余一个游戏小时 0.25 点，至少 1 点。堆肥箱、植物、发电机和已暂停的工作不能加速完成。[/*]
+[*][b]完成通知[/b]：装了 Exiled's Toolkit 时，机器完成、无人机返回或发电机燃料耗尽会弹出通知，点击通知打开「机器总览」窗口。[/*]
+[*][b]完成时间[/b]：[font=Courier New]FinishClock[/font] 显示工作完成时的游戏时间，而不是剩余时间。[/*]
 [*][b]沿用你原来的设置[/b]：酿酒和烹饪以前在 Action Speed 里。Machine Speed 第一次启动时，会读取你在 Action Speed 配置中的 [font=Courier New]Brewing[/font] 和 [font=Courier New]Cooking[/font] 数值并沿用。[/*]
 [/list]
 已经在进行的粉碎、口粮压制、无人机出行或烹饪，会保持开始时的时长。酿酒、染色、堆肥箱、植物和燃油发电机会立即按新速度运行，包括已经在进行的。
@@ -91,13 +112,20 @@ Machine Speed 不会往存档里写入自己的数据，也不会修改游戏文
 [*]烹饪进行中改动 [font=Courier New]CookingFuel[/font] 时，新数值会作用于整道菜，包括已经烹饪过的部分。[/*]
 [*]请只在没有菜在烹饪时，于两次游戏之间改动 [font=Courier New]Cooking[/font]。烹饪中途存档的菜在以其他速度读档后，会按新速度消耗燃料，可能一下子用掉很多燃料（或用得很少）。[/*]
 [*]如果在两次游戏之间把 [font=Courier New]PlantGrowth[/font] 改回 1，按其他速度种下的植物会保持原来的速度直到收获。在游戏中改回 1 时，它们会恢复游戏原本的速度。[/*]
+[*]在寒冷房间里，冰箱取房间和冰箱中更冷的一方；[font=Courier New]FridgeStrength[/font] 不会与房间的低温叠加。[/*]
+[*]改动 [font=Courier New]EquipmentWear[/font] 后，波次战报的「装置损耗」仍按游戏原本的损耗计算。[/*]
+[*][font=Courier New]CompostOutput[/font] 大于 1 时，箱内放不下的堆肥会丢失。[/*]
+[*]口粮压制机面板显示的是乘以 [font=Courier New]RationPressOutput[/font] 之前的产量；实际产出为加成后的数量。[/*]
+[*]加速完成的工作也会弹出完成通知。[/*]
+[*]开启 [font=Courier New]FinishClock[/font] 时，游戏自带的粉碎机、酿酒和染色面板仍显示剩余时间。[/*]
 [/list]
 
 [size=5]前置要求[/size]
 [list]
 [*]Survival Log 1.1.19131。游戏更新后模组可能暂时失效，直到模组更新为止。[/*]
 [*][url=https://www.nexusmods.com/survivallog/mods/12]BepInEx for Survival Log[/url]（BepInEx 6.0.0-be.788，IL2CPP），请先安装。[/*]
-[*]可选：[url=https://www.nexusmods.com/survivallog/mods/61]Exiled's Toolkit[/url] 0.4.0 或更新版本。装了它，在 Mod Manager 的「模组」界面改动的设置无需重启游戏即可生效；没装的话，改动在下次启动游戏时生效。[/*]
+[*]可选：[url=https://www.nexusmods.com/survivallog/mods/61]Exiled's Toolkit[/url] 0.4.0 或更新版本。装了它，在 Mod Manager 的「模组」界面改动的设置无需重启游戏即可生效；没装的话，改动在下次启动游戏时生效。它也负责显示完成通知。[/*]
+[*]可选：「昼夜时长」（Day Length），用于 [font=Courier New]FollowDayLength[/font]。[/*]
 [/list]
 
 [size=5]安装[/size]

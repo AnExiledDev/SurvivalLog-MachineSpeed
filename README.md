@@ -16,6 +16,13 @@ Each machine has its own speed. 2 means a job takes half the game time, 0.5 mean
 - **Cooking** at a stove or hot pot takes less time. It burns the same fuel per dish at any speed.
 - **Cooking fuel**: how much fuel a stove or hot pot uses for each dish. 0.5 is half, 0 uses none.
 - **Takes your old settings**: brewing and cooking used to be in Action Speed. The first time Machine Speed starts, it reads your `Brewing` and `Cooking` values from Action Speed's config and uses them.
+- **Presets**: `Preset` sets every speed at once: Vanilla, Relaxed (2x), Fast (5x) or Instant.
+- **Follow Day Length**: with the Day Length mod, `FollowDayLength` keeps machines at their real-time pace on longer or shorter days.
+- **Amounts**: more output from the shredder, Ration Press, brewing, compost bins and harvests; bigger brews; faster robot charging; stronger fridges and freezers; more power per unit of generator fuel; and less wear on defense devices. See the Amounts section of [CONFIG.md](CONFIG.md).
+- **Machines window**: a Machines button in the tool column lists every machine at home with what it is making, the time left and when it finishes. Its badge counts the machines that need you. Esc closes the window.
+- **Rush**: a Rush button in the Machines window finishes a running job now for survival points, 0.25 per game hour left by default, at least 1. Compost bins, plants, generators and paused jobs cannot be rushed.
+- **Done notices**: with Exiled's Toolkit, a notice pops up when a machine finishes, a drone comes back or a generator runs out of fuel.
+- **Finish clock**: `FinishClock` shows the game time a job finishes instead of the time left.
 - **Log file**: what the mod set up at startup, and the first job each machine did with it, go to `BepInEx\machine-speed.log`.
 
 Speeds changed on the Mod Manager's Mods screen take effect at once with Exiled's Toolkit installed; a change made in the file applies at the next game start. A shred, ration batch, drone trip or cook that is already running keeps the length it started with. Brews, dye jobs, compost bins, plants and fuel generators follow the new speed straight away, including the ones already running. Machine Speed writes no data of its own into your save and does not edit game files. A job's sped-up length is held by the job, so it can end up in your save. You can remove the mod at any time; jobs started after that take the game's own time again.
@@ -29,11 +36,19 @@ All settings are listed in [CONFIG.md](CONFIG.md).
 - Change `Cooking` between games only when no dish is cooking. A dish saved mid-cook and loaded at another speed burns its fuel at the new speed, so it can use a lot of fuel at once (or very little).
 - Plants planted at another speed keep it until harvest when `PlantGrowth` is set back to 1 between games. Within a game, setting it back to 1 moves them to the game's pace.
 
+- Fridges in a cold room use whichever is colder, the room or the fridge; `FridgeStrength` does not stack with the room's cold.
+- The wave report's wear line still counts the game's own wear when `EquipmentWear` is changed.
+- Compost that does not fit in the bin with `CompostOutput` above 1 is lost.
+- The Ration Press panel shows the game's output before `RationPressOutput`; the batch gives the multiplied amount.
+- A rushed job also shows its done notice.
+- With `FinishClock` on, the game's own shredder, brewing and dye panels still show the time left.
+
 ## Requirements
 
 - Survival Log 1.1.19131. Built for this version; a game update can break it until the mod is updated.
 - The [BepInEx Pack for Survival Log](https://www.nexusmods.com/survivallog/mods/12), the BepInEx 6 (IL2CPP) build for the game.
-- Optional: [Exiled's Toolkit](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit) 0.4.0 or newer. With it, settings changed on the Mod Manager's Mods screen take effect without restarting the game. Without it, they take effect at the next game start.
+- Optional: [Exiled's Toolkit](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit) 0.4.0 or newer. With it, settings changed on the Mod Manager's Mods screen take effect without restarting the game. Without it, they take effect at the next game start. It also shows the done notices.
+- Optional: Day Length, for `FollowDayLength`.
 
 ## Install
 

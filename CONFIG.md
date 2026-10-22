@@ -18,5 +18,36 @@ Every speed goes from 0.25 to 100000. 1 is the game's own pace, and at 1 the mod
 | `Brewing` | `1` | Speed of brewing alcohol. |
 | `Cooking` | `1` | Speed of cooking at a stove or hot pot. It burns the same fuel per dish at any speed. |
 | `CookingFuel` | `1` | How much fuel a stove or hot pot uses for each dish. 1 is the game's amount, 0.5 is half, 0 uses none, 2 is twice as much. From 0 to 20; less than 0 counts as 1. |
+| `Preset` | `Custom` | Sets every machine speed at once. `Custom` uses each machine's own speed; `Vanilla` is the game's pace; `Relaxed` is 2x; `Fast` is 5x; `Instant` is 100000x. `FuelBurn` and `CookingFuel` keep their own settings. |
+| `FollowDayLength` | `false` | With the Day Length mod, machines keep their pace in real time: with days twice as long, every machine speed is doubled, on top of the preset. Follows Day Length from when a save loads. Does nothing without Day Length. |
 
 The first time the mod starts, `Brewing` and `Cooking` take your values from Action Speed's config, where these two settings used to be.
+
+## Amounts
+
+How much machines make, hold and use. 1 is the game's amount, and at 1 the mod leaves it alone. The output settings carry fractions over to the next job, so 1.5 gives 1 and 2 by turns.
+
+| Setting | Default | Range | What it does |
+| --- | --- | --- | --- |
+| `ShredderOutput` | `1` | 1 to 100 | Items the shredder gives for each item it shreds. |
+| `RationPressOutput` | `1` | 1 to 100 | Ration blocks and crumbs the Ration Press makes from a batch. |
+| `BrewingOutput` | `1` | 1 to 100 | Bottles a brewing barrel gives for a brew. |
+| `CompostOutput` | `1` | 1 to 100 | Compost a bin makes from the food that rots in it. Extra compost that does not fit in the bin is lost. |
+| `HarvestOutput` | `1` | 1 to 100 | Crops a harvest gives, by hand or by robot. Seeds are not changed. |
+| `BarrelCapacity` | `1` | 1 to 100 | The most bottles a barrel can make in one brew, rounded to whole bottles. The extra bottles still need enough ingredients. |
+| `RobotCharging` | `1` | 0.1 to 100 | How fast robots charge. Drones do not charge. |
+| `FridgeStrength` | `1` | 0.1 to 100 | How strongly powered fridges and freezers slow spoiling: 2 halves the spoiling. Never faster than outside a fridge or slower than a sealed cold store. |
+| `GeneratorEfficiency` | `1` | 0.1 to 100 | Power fuel generators make from the same fuel. How fast they burn it is `FuelBurn`. |
+| `EquipmentWear` | `1` | 0 to 100 | Durability defense devices lose to wear and attacks. 0 means no wear. Doors and windows are not changed. |
+
+Below the range counts as 1 (or as the bottom of the range for a small positive number on the 0.1 settings); above it counts as the top.
+
+## Overview
+
+The Machines button in the tool column opens a window with every machine at home. Its badge counts the machines that are finished, idle or out of fuel. Close the window with its close button or Esc.
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `Toasts` | `true` | Shows a notice when a machine finishes, a drone comes back or a fuel generator runs out of fuel. Clicking it opens the Machines window. Needs Exiled's Toolkit. |
+| `RushPointsPerHour` | `0.25` | Survival points the Rush button costs for each game hour a job has left, rounded up, at least 1. From 0.01 to 1000; 0 or less counts as 0.25. |
+| `FinishClock` | `false` | Shows the game time a job will be done instead of the time left, in the Machines window and the timers over plants, brewing barrels and dye vats. |
