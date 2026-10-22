@@ -45,6 +45,7 @@
     <AssemblyMetadata Include="ModManager.Settings" Value="Restart" />
     <AssemblyMetadata Include="ModManager.GitHub" Value="AnExiledDev/SurvivalLog-MachineSpeed" />
     <AssemblyMetadata Include="ModManager.Changelog" Value="https://github.com/AnExiledDev/SurvivalLog-MachineSpeed/blob/main/CHANGELOG.md" />
+    <AssemblyMetadata Include="ModManager.NexusId" Value="83" />
   </ItemGroup>
 
 </Project>
