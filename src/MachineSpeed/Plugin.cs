@@ -93,6 +93,7 @@ public sealed class Plugin : BasePlugin
         }, cooking, cookingFuel);
         OptionalLive.Watch(fuelBurn, _ => FuelBurnPatch.Use(speeds.Own(fuelBurn)));
         OptionalLive.Watch(followDayLength, DayLengthWorld.Use);
+        Overview.Install(this, Config, harmony, log);
         StartClock(log);
     }
 

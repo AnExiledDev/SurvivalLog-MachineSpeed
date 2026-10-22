@@ -28,11 +28,16 @@
     <Reference Include="$(Interop)\ObservableCollections.dll" Private="false" />
     <Reference Include="$(Interop)\UnityEngine.CoreModule.dll" Private="false" />
     <Reference Include="$(Interop)\Vuplex.WebView.dll" Private="false" />
+    <Reference Include="$(Interop)\UnityEngine.UIModule.dll" Private="false" />
+    <Reference Include="$(Interop)\UnityEngine.UI.dll" Private="false" />
+    <Reference Include="$(Interop)\UnityEngine.InputLegacyModule.dll" Private="false" />
+    <Reference Include="$(Interop)\UnityEngine.TextRenderingModule.dll" Private="false" />
     <Reference Include="$(ToolkitDll)" Private="false" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="page.js" LogicalName="MachineSpeed.page.js" />
+    <EmbeddedResource Include="overview.js" LogicalName="MachineSpeed.overview.js" />
   </ItemGroup>
 
   <!-- What the Mod Manager's Mods screen shows about this mod. -->
