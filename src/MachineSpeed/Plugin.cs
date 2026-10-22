@@ -67,6 +67,7 @@ public sealed class Plugin : BasePlugin
         BrewingPatch.Apply(harmony, log);
         DyeVatPatch.Apply(harmony, log);
         CompostPatch.Apply(log);
+        AmountPatches.Apply(this, harmony, log);
         HourJobs.UseLog(log);
         TimerPage.UseLog(log);
 
