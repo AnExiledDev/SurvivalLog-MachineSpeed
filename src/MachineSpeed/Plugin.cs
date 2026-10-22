@@ -11,6 +11,7 @@ namespace MachineSpeed;
 
 [BepInPlugin(Guid, "Machine Speed", Version)]
 [BepInDependency(OptionalLive.ToolkitGuid, BepInDependency.DependencyFlags.SoftDependency)]
+[BepInDependency(DayLengthWorld.DayLengthGuid, BepInDependency.DependencyFlags.SoftDependency)]
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.machinespeed";
@@ -44,6 +45,12 @@ public sealed class Plugin : BasePlugin
         var fuelBurn = Config.Bind(Section, "FuelBurn", 1f,
             "How fast fuel generators burn fuel: 2 burns it twice as fast, 0.5 makes it last twice as long. From 0.25 to 100000; 0 or less counts as 1.\n" +
             "燃油发电机消耗燃料的速度：2 为两倍消耗，0.5 让燃料多用一倍时间。范围 0.25 到 100000，0 或更小按 1 计算。");
+        var preset = Config.Bind(Section, "Preset", Preset.Custom,
+            "Sets every machine speed at once. Custom uses each machine's own speed setting; Vanilla is the game's pace; Relaxed is 2x; Fast is 5x; Instant is 100000x, almost instant. FuelBurn and CookingFuel keep their own settings.\n" +
+            "一次设置所有机器的速度。Custom 使用各台机器自己的速度设置；Vanilla 为游戏原速；Relaxed 为两倍速；Fast 为五倍速；Instant 为 100000 倍速，几乎立即完成。FuelBurn 和 CookingFuel 仍按各自的设置。");
+        var followDayLength = Config.Bind(Section, "FollowDayLength", false,
+            "When the Day Length mod makes days longer or shorter, machines keep their pace in real time: with days twice as long, every machine speed is doubled, on top of the preset. Day Length applies its setting when a save loads, and this follows it from then. Does nothing without Day Length. FuelBurn and CookingFuel are not changed.\n" +
+            "当「昼夜时长」模组让一天变长或变短时，机器在现实时间里保持原来的工作节奏：一天变为两倍长时，所有机器速度也翻倍，并叠加在预设之上。「昼夜时长」在读取存档时应用其设置，本项从那时起跟随。未安装「昼夜时长」时不起作用。FuelBurn 和 CookingFuel 不受影响。");
 
         if (isFirstStart) ImportFromActionSpeed(brewing, cooking, log.Write);
 
@@ -63,17 +70,19 @@ public sealed class Plugin : BasePlugin
         HourJobs.UseLog(log);
         TimerPage.UseLog(log);
 
-        Watch(shredder, ShredderPatch.Use, log);
-        Watch(rationPress, RationPressPatch.Use, log);
-        Watch(plantGrowth, PlantGrowthPatch.Use, log);
-        Watch(fuelBurn, FuelBurnPatch.Use, log);
-        Watch(droneTrips, DroneTripPatch.Use, log);
-        Watch(brewing, BrewingPatch.Use, log);
-        Watch(dyeVat, DyeVatPatch.Use, log);
-        Watch(compost, CompostPatch.Use, log);
-        OptionalLive.Watch(() =>
+        var speeds = new PlannedSpeeds(preset, log.Write);
+
+        DayLengthWorld.Apply(harmony, log, speeds.Reapply);
+        speeds.Watch(shredder, ShredderPatch.Use);
+        speeds.Watch(rationPress, RationPressPatch.Use);
+        speeds.Watch(plantGrowth, PlantGrowthPatch.Use);
+        speeds.Watch(droneTrips, DroneTripPatch.Use);
+        speeds.Watch(brewing, BrewingPatch.Use);
+        speeds.Watch(dyeVat, DyeVatPatch.Use);
+        speeds.Watch(compost, CompostPatch.Use);
+        speeds.Watch(() =>
         {
-            var cookingSpeed = Checked(cooking, log.Write);
+            var cookingSpeed = speeds.For(cooking);
             var fuel = FuelUse.From(cookingFuel.Value);
 
             if (fuel.Complaint($"{Section}/{cookingFuel.Definition.Key}") is { } fuelComplaint) log.Write(fuelComplaint);
@@ -81,11 +90,10 @@ public sealed class Plugin : BasePlugin
             CookingPatch.Use(cookingSpeed);
             CookingFuelPatch.Use(cookingSpeed, fuel);
         }, cooking, cookingFuel);
+        OptionalLive.Watch(fuelBurn, _ => FuelBurnPatch.Use(speeds.Own(fuelBurn)));
+        OptionalLive.Watch(followDayLength, DayLengthWorld.Use);
         StartClock(log);
     }
-
-    private static void Watch(ConfigEntry<float> entry, Action<Speed> use, SpeedLog log) =>
-        OptionalLive.Watch(entry, _ => use(Checked(entry, log.Write)));
 
     /// <summary>
     /// Brewing, dyeing and compost are moved along a few times a second by a ticker. It runs even with all three at the
@@ -105,16 +113,6 @@ public sealed class Plugin : BasePlugin
 
     private ConfigEntry<float> Bind(string key, string work, string workChinese) =>
         Config.Bind(Section, key, 1f, $"Speed of {work} {Range}\n{workChinese}{RangeChinese}");
-
-    private static Speed Checked(ConfigEntry<float> entry, Action<string> log)
-    {
-        var speed = Speed.From(entry.Value);
-        var complaint = speed.Complaint($"{Section}/{entry.Definition.Key}");
-
-        if (complaint != null) log(complaint);
-
-        return speed;
-    }
 
     /// <summary>Brewing and cooking used to be Action Speed settings; the first start carries a player's values over.</summary>
     private void ImportFromActionSpeed(ConfigEntry<float> brewing, ConfigEntry<float> cooking, Action<string> log)
