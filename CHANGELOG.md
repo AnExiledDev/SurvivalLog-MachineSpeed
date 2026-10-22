@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.1
+
+- New `ShredderAutoStart` setting (off by default): an idle shredder starts by itself when you put items into it. Taking items out does not start it.
+- Made for Survival Log 1.1.19131.
+
 ## 0.5.0
 
 - A Machines button in the tool column opens a window listing every machine at home: what it is making, time left, finish time, and which are idle, finished or out of fuel. The button shows how many need you.

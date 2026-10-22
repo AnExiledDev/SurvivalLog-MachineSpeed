@@ -15,7 +15,7 @@ namespace MachineSpeed;
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.machinespeed";
-    private const string Version = "0.5.0";
+    private const string Version = "0.5.1";
     private const string Section = "Machines";
     private const string ActionSpeedConfig = "com.dev.survivallog.actionspeed.cfg";
 
@@ -51,6 +51,9 @@ public sealed class Plugin : BasePlugin
         var followDayLength = Config.Bind(Section, "FollowDayLength", false,
             "When the Day Length mod makes days longer or shorter, machines keep their pace in real time: with days twice as long, every machine speed is doubled, on top of the preset. Day Length applies its setting when a save loads, and this follows it from then. Does nothing without Day Length. FuelBurn and CookingFuel are not changed.\n" +
             "当「昼夜时长」模组让一天变长或变短时，机器在现实时间里保持原来的工作节奏：一天变为两倍长时，所有机器速度也翻倍，并叠加在预设之上。「昼夜时长」在读取存档时应用其设置，本项从那时起跟随。未安装「昼夜时长」时不起作用。FuelBurn 和 CookingFuel 不受影响。");
+        var shredderAutoStart = Config.Bind(Section, "ShredderAutoStart", false,
+            "Start an idle shredder by itself when you put items into it, as if you pressed Start. Taking items out does not start it, so a shredder you stopped stays stopped until you add more. It still needs power and room for what it makes.\n" +
+            "向闲置的粉碎机放入物品时自动开始粉碎，如同按下开始按钮。取出物品不会让它开始，所以你停下的粉碎机在再次放入物品前保持停止。粉碎机仍需要电力和放产物的空间。");
 
         if (isFirstStart) ImportFromActionSpeed(brewing, cooking, log.Write);
 
@@ -67,6 +70,7 @@ public sealed class Plugin : BasePlugin
         BrewingPatch.Apply(harmony, log);
         DyeVatPatch.Apply(harmony, log);
         CompostPatch.Apply(log);
+        ShredderAutoStart.Apply(harmony, log);
         AmountPatches.Apply(this, harmony, log);
         HourJobs.UseLog(log);
         TimerPage.UseLog(log);
@@ -93,6 +97,7 @@ public sealed class Plugin : BasePlugin
         }, cooking, cookingFuel);
         OptionalLive.Watch(fuelBurn, _ => FuelBurnPatch.Use(speeds.Own(fuelBurn)));
         OptionalLive.Watch(followDayLength, DayLengthWorld.Use);
+        OptionalLive.Watch(shredderAutoStart, ShredderAutoStart.Use);
         Overview.Install(this, Config, harmony, log);
         StartClock(log);
     }

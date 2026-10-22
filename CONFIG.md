@@ -19,6 +19,7 @@ Every speed goes from 0.25 to 100000. 1 is the game's own pace, and at 1 the mod
 | `Cooking` | `1` | Speed of cooking at a stove or hot pot. It burns the same fuel per dish at any speed. |
 | `CookingFuel` | `1` | How much fuel a stove or hot pot uses for each dish. 1 is the game's amount, 0.5 is half, 0 uses none, 2 is twice as much. From 0 to 20; less than 0 counts as 1. |
 | `Preset` | `Custom` | Sets every machine speed at once. `Custom` uses each machine's own speed; `Vanilla` is the game's pace; `Relaxed` is 2x; `Fast` is 5x; `Instant` is 100000x. `FuelBurn` and `CookingFuel` keep their own settings. |
+| `ShredderAutoStart` | `false` | Starts an idle shredder by itself when you put items into it, as if you pressed Start. Taking items out does not start it, so a shredder you stopped stays stopped until you add more. It still needs power and room in its tray. |
 | `FollowDayLength` | `false` | With the Day Length mod, machines keep their pace in real time: with days twice as long, every machine speed is doubled, on top of the preset. Follows Day Length from when a save loads. Does nothing without Day Length. |
 
 The first time the mod starts, `Brewing` and `Cooking` take your values from Action Speed's config, where these two settings used to be.
