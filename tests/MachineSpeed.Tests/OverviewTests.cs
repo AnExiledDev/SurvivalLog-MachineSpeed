@@ -238,6 +238,76 @@ public class MachineListTests
     private static MachineRow Row(MachineState state, long id, double? remain = null) => new(MachineKind.Shredder, id, "", null, state, remain, CanRush: false);
 }
 
+public class MachineIconsTests
+{
+    [Fact]
+    public void The_furniture_tables_icon_is_used_from_the_folder_the_window_is_in()
+    {
+        Assert.Equal("Res/Furniture/UI_Item_Icon_x.png", MachineIcons.Of(MachineKind.Brewing, "../../Res/Furniture/UI_Item_Icon_x.png"));
+    }
+
+    [Fact]
+    public void Furniture_with_no_icon_of_its_own_gets_its_kinds_icon()
+    {
+        Assert.Equal(MachineIcons.KindIcon(MachineKind.Shredder), MachineIcons.Of(MachineKind.Shredder, ""));
+        Assert.Equal(MachineIcons.KindIcon(MachineKind.Shredder), MachineIcons.Of(MachineKind.Shredder, null));
+    }
+
+    [Fact]
+    public void A_table_value_that_points_outside_the_games_pictures_is_not_used()
+    {
+        var usual = MachineIcons.KindIcon(MachineKind.Drone);
+
+        Assert.Equal(usual, MachineIcons.Of(MachineKind.Drone, "https://example.com/x.png"));
+        Assert.Equal(usual, MachineIcons.Of(MachineKind.Drone, "../../Res/../../secret.png"));
+        Assert.Equal(usual, MachineIcons.Of(MachineKind.Drone, "../../Res/Furniture/x.js"));
+    }
+}
+
+public class MachineProgressTests
+{
+    [Fact]
+    public void Progress_is_the_share_of_the_job_already_done()
+    {
+        Assert.Equal(0.75, Row(MachineState.Running, remain: 900, total: 3600).Progress);
+    }
+
+    [Fact]
+    public void Progress_stays_between_empty_and_full_when_the_numbers_disagree()
+    {
+        Assert.Equal(0, Row(MachineState.Running, remain: 5000, total: 3600).Progress);
+        Assert.Equal(1, Row(MachineState.Running, remain: -10, total: 3600).Progress);
+    }
+
+    [Fact]
+    public void Only_a_running_or_paused_job_of_known_length_has_progress()
+    {
+        Assert.Null(Row(MachineState.Finished, remain: 0, total: 3600).Progress);
+        Assert.Null(Row(MachineState.Running, remain: 900, total: null).Progress);
+        Assert.Null(Row(MachineState.Running, remain: 900, total: 0).Progress);
+        Assert.NotNull(Row(MachineState.Paused, remain: 900, total: 3600).Progress);
+    }
+
+    private static MachineRow Row(MachineState state, double remain, double? total) => new(MachineKind.Shredder, 1, "", null, state, remain, CanRush: false, TotalSeconds: total);
+}
+
+public class OverviewHintTests
+{
+    [Fact]
+    public void Each_kind_of_wait_says_what_the_player_should_do()
+    {
+        Assert.Equal("Back with its haul", Hint(MachineKind.Drone, MachineState.Finished));
+        Assert.Equal("Ready to harvest", Hint(MachineKind.Plants, MachineState.Finished));
+        Assert.Equal("Ready to send out", Hint(MachineKind.Drone, MachineState.Idle));
+        Assert.Equal("Switched off", Hint(MachineKind.Generator, MachineState.Paused));
+        Assert.Equal("Ready to take out", Hint(MachineKind.Brewing, MachineState.Finished));
+        Assert.Equal("Add fuel to restart", Hint(MachineKind.Generator, MachineState.OutOfFuel));
+        Assert.Equal("", Hint(MachineKind.Brewing, MachineState.Running));
+    }
+
+    private static string Hint(MachineKind kind, MachineState state) => OverviewTexts.Hint(new MachineRow(kind, 1, "", null, state, null, CanRush: false), isChinese: false);
+}
+
 public class OverviewViewTests
 {
     private static readonly ViewSettings English = new(IsChinese: false, RushPointsPerHour: 0.25, IsFinishClock: false, NowSeconds: 8 * 3600);
@@ -261,7 +331,7 @@ public class OverviewViewTests
     {
         var json = View(Brew(remain: 10 * 3600), points: 3);
 
-        Assert.Contains("\"rush\":{\"label\":\"Rush (3 pts)\",\"ok\":true", json);
+        Assert.Contains("\"rush\":{\"label\":\"Rush\",\"cost\":\"3\",\"ok\":true", json);
     }
 
     [Fact]
@@ -269,7 +339,7 @@ public class OverviewViewTests
     {
         var json = View(Brew(remain: 10 * 3600), points: 2);
 
-        Assert.Contains("\"ok\":false,\"tip\":\"Needs 3 survival points, you have 2\"", json);
+        Assert.Contains("\"ok\":false,\"tip\":\"Needs 3 survival points, you have 2\",\"why\":\"Need 3, have 2\"", json);
     }
 
     [Fact]
@@ -279,18 +349,18 @@ public class OverviewViewTests
     }
 
     [Fact]
-    public void Times_show_time_left_by_default_and_the_finish_time_with_the_finish_clock()
+    public void Times_lead_with_time_left_and_swap_to_the_finish_time_with_the_finish_clock()
     {
-        Assert.Contains("\"time\":\"1:30 left\"", View(Brew(remain: 5400), points: 0));
-        Assert.Contains("\"time\":\"Done at 09:30\"", View(Brew(remain: 5400), points: 0, English with { IsFinishClock = true }));
+        Assert.Contains("\"time\":{\"main\":{\"value\":\"1:30\",\"word\":\"left\"},\"other\":{\"value\":\"09:30\",\"word\":\"done\"}}", View(Brew(remain: 5400), points: 0));
+        Assert.Contains("\"time\":{\"main\":{\"value\":\"09:30\",\"word\":\"done\"},\"other\":{\"value\":\"1:30\",\"word\":\"left\"}}", View(Brew(remain: 5400), points: 0, English with { IsFinishClock = true }));
     }
 
     [Fact]
-    public void A_paused_job_shows_time_left_even_with_the_finish_clock()
+    public void A_paused_job_shows_only_time_left_even_with_the_finish_clock()
     {
         var paused = Brew(remain: 5400) with { State = MachineState.Paused };
 
-        Assert.Contains("\"time\":\"1:30 left\"", View(paused, points: 0, English with { IsFinishClock = true }));
+        Assert.Contains("\"time\":{\"main\":{\"value\":\"1:30\",\"word\":\"left\"},\"other\":null}", View(paused, points: 0, English with { IsFinishClock = true }));
     }
 
     [Fact]
@@ -298,8 +368,49 @@ public class OverviewViewTests
     {
         var generator = new MachineRow(MachineKind.Generator, 3, "", null, MachineState.Running, 5400, CanRush: false);
 
-        Assert.Contains("\"time\":\"Fuel for 1:30\"", View(generator, points: 0));
-        Assert.Contains("\"time\":\"Fuel until 09:30\"", View(generator, points: 0, English with { IsFinishClock = true }));
+        Assert.Contains("\"main\":{\"value\":\"1:30\",\"word\":\"fuel left\"},\"other\":{\"value\":\"09:30\",\"word\":\"fuel until\"}", View(generator, points: 0));
+    }
+
+    [Fact]
+    public void A_machine_waiting_on_the_player_has_no_clock_and_says_what_to_do()
+    {
+        var json = View(Brew(remain: 0) with { State = MachineState.Finished }, points: 0);
+
+        Assert.Contains("\"group\":\"needs\"", json);
+        Assert.Contains("\"hint\":\"Ready to take out\"", json);
+        Assert.Contains("\"time\":null", json);
+    }
+
+    [Fact]
+    public void A_running_job_is_listed_as_working_with_how_far_along_it_is()
+    {
+        var json = View(Brew(remain: 2700) with { TotalSeconds = 3600 }, points: 0);
+
+        Assert.Contains("\"group\":\"working\"", json);
+        Assert.Contains("\"progress\":0.25", json);
+    }
+
+    [Fact]
+    public void A_job_with_no_known_length_has_no_progress_bar()
+    {
+        Assert.Contains("\"progress\":null", View(Brew(remain: 2700), points: 0));
+    }
+
+    [Fact]
+    public void The_head_counts_the_machines_at_home_and_those_waiting_on_the_player()
+    {
+        var rows = new[] { Brew(remain: 60), Brew(remain: 0) with { Id = 8, State = MachineState.Finished }, Brew(remain: 0) with { Id = 9, State = MachineState.Idle } };
+        var json = OverviewView.Write(new MachineRead.Home(rows, 38), English);
+
+        Assert.Contains("\"atHome\":\"3 at home\"", json);
+        Assert.Contains("\"needYou\":\"2 need you\"", json);
+        Assert.Contains("\"points\":\"38\"", json);
+    }
+
+    [Fact]
+    public void With_nothing_waiting_the_head_does_not_say_none_need_you()
+    {
+        Assert.Contains("\"needYou\":\"\"", View(Brew(remain: 60), points: 1));
     }
 
     [Fact]

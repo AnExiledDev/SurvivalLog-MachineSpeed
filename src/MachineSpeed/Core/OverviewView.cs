@@ -20,15 +20,26 @@ public static class OverviewView
         var isChinese = settings.IsChinese;
 
         Field(json, "title", OverviewTexts.Title.Pick(isChinese));
-        json.Append(",\"cols\":[");
-        Join(json, new[] { OverviewTexts.MachineColumn, OverviewTexts.MakingColumn, OverviewTexts.StateColumn, OverviewTexts.TimeColumn }, phrase => json.Append(JsText.Literal(phrase.Pick(isChinese))));
-        json.Append(']');
+        json.Append(',');
+        Field(json, "pointsLabel", OverviewTexts.PointsLabel.Pick(isChinese));
+        json.Append(',');
+        Field(json, "needsTitle", OverviewTexts.NeedsSection.Pick(isChinese));
+        json.Append(',');
+        Field(json, "workingTitle", OverviewTexts.WorkingSection.Pick(isChinese));
+        json.Append(',');
+        Field(json, "toClose", OverviewTexts.ToClose.Pick(isChinese));
 
         switch (read)
         {
             case MachineRead.Home home:
+                var waiting = MachineList.WaitingCount(home.Rows);
+
                 json.Append(',');
-                Field(json, "points", home.Points is { } points ? OverviewTexts.Points.Say(isChinese, points) : "");
+                Field(json, "atHome", home.Rows.Count == 0 ? "" : OverviewTexts.AtHome.Say(isChinese, home.Rows.Count));
+                json.Append(',');
+                Field(json, "needYou", waiting == 0 ? "" : OverviewTexts.NeedYou.Say(isChinese, waiting));
+                json.Append(',');
+                Field(json, "points", home.Points is { } points ? points.ToString(CultureInfo.InvariantCulture) : "");
                 json.Append(',');
                 Field(json, "note", home.Rows.Count == 0 ? OverviewTexts.Empty.Pick(isChinese) : "");
                 json.Append(",\"rows\":[");
@@ -36,7 +47,7 @@ public static class OverviewView
                 json.Append(']');
                 break;
             default:
-                json.Append(",\"points\":\"\",");
+                json.Append(",\"atHome\":\"\",\"needYou\":\"\",\"points\":\"\",");
                 Field(json, "note", (read is MachineRead.Away ? OverviewTexts.Away : OverviewTexts.NoGame).Pick(isChinese));
                 json.Append(",\"rows\":[]");
                 break;
@@ -67,7 +78,15 @@ public static class OverviewView
         json.Append(',');
         Field(json, "stateText", OverviewTexts.State(row, isChinese));
         json.Append(',');
-        Field(json, "time", OverviewTexts.Time(row, settings.NowSeconds, settings.IsFinishClock, isChinese));
+        Field(json, "group", MachineList.IsWaiting(row) ? "needs" : "working");
+        json.Append(',');
+        Field(json, "icon", row.Icon);
+        json.Append(',');
+        Field(json, "hint", OverviewTexts.Hint(row, isChinese));
+        json.Append(",\"progress\":");
+        json.Append(row.Progress is { } progress ? progress.ToString("0.###", CultureInfo.InvariantCulture) : "null");
+        json.Append(",\"time\":");
+        Clock(json, OverviewTexts.Clock(row, settings.NowSeconds, settings.IsFinishClock, isChinese));
         json.Append(",\"rush\":");
         Rush(json, row, points, settings);
         json.Append('}');
@@ -82,10 +101,10 @@ public static class OverviewView
         switch (plan)
         {
             case RushPlan.Affordable affordable:
-                RushButton(json, OverviewTexts.RushLabel.Say(isChinese, affordable.Cost), isPressable: true, OverviewTexts.RushTip.Say(isChinese, affordable.Cost));
+                RushButton(json, OverviewTexts.RushLabel.Pick(isChinese), affordable.Cost, isPressable: true, OverviewTexts.RushTip.Say(isChinese, affordable.Cost), "");
                 break;
             case RushPlan.TooFew tooFew:
-                RushButton(json, OverviewTexts.RushLabel.Say(isChinese, tooFew.Cost), isPressable: false, OverviewTexts.RushTooFewTip.Say(isChinese, tooFew.Cost, tooFew.Points));
+                RushButton(json, OverviewTexts.RushLabel.Pick(isChinese), tooFew.Cost, isPressable: false, OverviewTexts.RushTooFewTip.Say(isChinese, tooFew.Cost, tooFew.Points), OverviewTexts.RushTooFewShort.Say(isChinese, tooFew.Cost, tooFew.Points));
                 break;
             default:
                 json.Append("null");
@@ -93,12 +112,45 @@ public static class OverviewView
         }
     }
 
-    private static void RushButton(StringBuilder json, string label, bool isPressable, string tip)
+    // "why" is the short line under a Rush the player cannot afford; the web view draws no hover tips.
+    private static void RushButton(StringBuilder json, string label, int cost, bool isPressable, string tip, string why)
     {
         json.Append('{');
         Field(json, "label", label);
+        json.Append(',');
+        Field(json, "cost", cost.ToString(CultureInfo.InvariantCulture));
         json.Append(",\"ok\":").Append(isPressable ? "true" : "false").Append(',');
         Field(json, "tip", tip);
+        json.Append(',');
+        Field(json, "why", why);
+        json.Append('}');
+    }
+
+    private static void Clock(StringBuilder json, RowClock? clock)
+    {
+        if (clock is not { } shown)
+        {
+            json.Append("null");
+
+            return;
+        }
+
+        json.Append("{\"main\":");
+        Time(json, shown.Main);
+        json.Append(",\"other\":");
+
+        if (shown.Other is { } other) Time(json, other);
+        else json.Append("null");
+
+        json.Append('}');
+    }
+
+    private static void Time(StringBuilder json, TimeText time)
+    {
+        json.Append('{');
+        Field(json, "value", time.Value);
+        json.Append(',');
+        Field(json, "word", time.Word);
         json.Append('}');
     }
 

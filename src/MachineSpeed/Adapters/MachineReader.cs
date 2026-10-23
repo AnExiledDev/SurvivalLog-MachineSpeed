@@ -151,10 +151,10 @@ internal sealed class MachineReader
         {
             var product = shredder.State == 0 ? null : ItemName(config, shredder.HeadConfigId);
 
-            return TimedRow(MachineKind.Shredder, config, furniture, shredder.State, shredder.GetRemainSeconds(now), product);
+            return TimedRow(MachineKind.Shredder, config, furniture, shredder.State, shredder.GetRemainSeconds(now), shredder.TotalSeconds, product);
         }
 
-        if (AgentTools.GetAgentComponent<CompressorComponent>(furniture) is { } press) return TimedRow(MachineKind.RationPress, config, furniture, press.State, press.GetRemainSeconds(now), null);
+        if (AgentTools.GetAgentComponent<CompressorComponent>(furniture) is { } press) return TimedRow(MachineKind.RationPress, config, furniture, press.State, press.GetRemainSeconds(now), press.TotalSeconds, null);
 
         if (AgentTools.GetAgentComponent<DyeComponent>(furniture) is { } dye) return DyeRow(config, furniture, dye, now);
 
@@ -169,8 +169,11 @@ internal sealed class MachineReader
         return null;
     }
 
-    /// <summary>The shredder and the Ration Press share their states: 1 running, 2 paused (power off), 3 done.</summary>
-    private static MachineRow TimedRow(MachineKind kind, ConfigManager config, Furniture furniture, int state, int remain, string? product)
+    /// <summary>
+    /// The shredder and the Ration Press share their states: 1 running, 2 paused (power off), 3 done. A running batch's
+    /// TotalSeconds is already at the machine's speed.
+    /// </summary>
+    private static MachineRow TimedRow(MachineKind kind, ConfigManager config, Furniture furniture, int state, int remain, int total, string? product)
     {
         var (shown, isTimed) = state switch
         {
@@ -180,7 +183,7 @@ internal sealed class MachineReader
             _ => (MachineState.Idle, false),
         };
 
-        return Row(kind, config, furniture, product, shown, isTimed ? remain : null, canRush: shown == MachineState.Running);
+        return Row(kind, config, furniture, product, shown, isTimed ? remain : null, canRush: shown == MachineState.Running, isTimed ? total : null);
     }
 
     private static MachineRow BrewRow(ConfigManager config, Furniture furniture, BrewComponent brew, int now)
@@ -190,8 +193,9 @@ internal sealed class MachineReader
             var nowHour = now / SecondsPerHour;
             var done = Countdown.Done(nowHour - brew.StartHour, now, nowHour, HourJobs.Carry("brew", furniture.InstanceId));
             var remain = Countdown.Remaining(brew.TotalHours, done, BrewingPatch.Speed);
+            var total = Countdown.Remaining(brew.TotalHours, 0, BrewingPatch.Speed);
 
-            return Row(MachineKind.Brewing, config, furniture, NonEmpty(Furniture.GetBrewProductName(brew.ResultItemId)), MachineState.Running, remain, canRush: true);
+            return Row(MachineKind.Brewing, config, furniture, NonEmpty(Furniture.GetBrewProductName(brew.ResultItemId)), MachineState.Running, remain, canRush: true, total);
         }
 
         return brew.IsDone()
@@ -206,8 +210,9 @@ internal sealed class MachineReader
             var nowHour = now / SecondsPerHour;
             var done = Countdown.Done(nowHour - dye.StartHour, now, nowHour, HourJobs.Carry("dye", furniture.InstanceId));
             var remain = Countdown.Remaining(dye.ResultCount * dye.HoursPerBucket, done, DyeVatPatch.Speed);
+            var total = Countdown.Remaining(dye.ResultCount * dye.HoursPerBucket, 0, DyeVatPatch.Speed);
 
-            return Row(MachineKind.DyeVat, config, furniture, NonEmpty(Furniture.GetDyeProductName(dye.ResultItemId)), MachineState.Running, remain, canRush: true);
+            return Row(MachineKind.DyeVat, config, furniture, NonEmpty(Furniture.GetDyeProductName(dye.ResultItemId)), MachineState.Running, remain, canRush: true, total);
         }
 
         return dye.IsDone()
@@ -222,8 +227,8 @@ internal sealed class MachineReader
 
         return cooking.State switch
         {
-            CookingState.Running => Row(MachineKind.Cooking, config, furniture, null, MachineState.Running, Math.Max(0, cooking.CookDuration - (now - start)), canRush: true),
-            CookingState.Paused => Row(MachineKind.Cooking, config, furniture, null, MachineState.Paused, Math.Max(0, cooking.CookDuration - (cooking.PauseStartTotalSeconds - start)), canRush: false),
+            CookingState.Running => Row(MachineKind.Cooking, config, furniture, null, MachineState.Running, Math.Max(0, cooking.CookDuration - (now - start)), canRush: true, cooking.CookDuration),
+            CookingState.Paused => Row(MachineKind.Cooking, config, furniture, null, MachineState.Paused, Math.Max(0, cooking.CookDuration - (cooking.PauseStartTotalSeconds - start)), canRush: false, cooking.CookDuration),
             _ when cooking.HasPendingProduct => Row(MachineKind.Cooking, config, furniture, NonEmpty(cooking.PendingProductName), MachineState.Finished, null, canRush: false),
             _ => Row(MachineKind.Cooking, config, furniture, null, MachineState.Idle, null, canRush: false),
         };
@@ -241,7 +246,7 @@ internal sealed class MachineReader
         {
             var isTradeLocked = world._StrangerTradeActiveManager?._IsLocked_k__BackingField != false;
 
-            return Row(MachineKind.Drone, config, furniture, null, MachineState.Running, drone.ReturnSec - now, canRush: !isTradeLocked);
+            return Row(MachineKind.Drone, config, furniture, null, MachineState.Running, drone.ReturnSec - now, canRush: !isTradeLocked, drone.ReturnSec - drone.DepartSec);
         }
 
         var hasCargo = isBusy || StrangerTradeActiveManager.HasCargoLeftover(furniture.InstanceId);
@@ -273,12 +278,14 @@ internal sealed class MachineReader
         }
 
         return count > 0
-            ? new MachineRow(MachineKind.Compost, furniture.InstanceId, FurnitureName(config, furniture), new Contents.Items(count), MachineState.Running, null, false)
-            : new MachineRow(MachineKind.Compost, furniture.InstanceId, FurnitureName(config, furniture), null, MachineState.Idle, null, false);
+            ? new MachineRow(MachineKind.Compost, furniture.InstanceId, FurnitureName(config, furniture), new Contents.Items(count), MachineState.Running, null, false, Icon: Icon(MachineKind.Compost, config, furniture))
+            : new MachineRow(MachineKind.Compost, furniture.InstanceId, FurnitureName(config, furniture), null, MachineState.Idle, null, false, Icon: Icon(MachineKind.Compost, config, furniture));
     }
 
-    private static MachineRow Row(MachineKind kind, ConfigManager config, Furniture furniture, string? product, MachineState state, double? remain, bool canRush) =>
-        new(kind, furniture.InstanceId, FurnitureName(config, furniture), product == null ? null : new Contents.Named(product), state, remain, canRush);
+    private static MachineRow Row(MachineKind kind, ConfigManager config, Furniture furniture, string? product, MachineState state, double? remain, bool canRush, double? total = null) =>
+        new(kind, furniture.InstanceId, FurnitureName(config, furniture), product == null ? null : new Contents.Named(product), state, remain, canRush, total, Icon(kind, config, furniture));
+
+    private static string Icon(MachineKind kind, ConfigManager config, Furniture furniture) => MachineIcons.Of(kind, config.Get_Config_Furniture(furniture.AgentConfigId)?.ICON);
 
     private static string FurnitureName(ConfigManager config, Furniture furniture)
     {
@@ -340,7 +347,7 @@ internal sealed class MachineReader
 
             var state = _ready > 0 ? MachineState.Finished : MachineState.Running;
 
-            return new MachineRow(MachineKind.Plants, 0, "", new Contents.Plants(_growing, _ready), state, state == MachineState.Running ? _soonest : null, false);
+            return new MachineRow(MachineKind.Plants, 0, "", new Contents.Plants(_growing, _ready), state, state == MachineState.Running ? _soonest : null, false, Icon: MachineIcons.KindIcon(MachineKind.Plants));
         }
     }
 }

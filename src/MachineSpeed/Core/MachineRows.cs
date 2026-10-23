@@ -48,9 +48,17 @@ public abstract record Contents
 /// <summary>
 /// One machine as the window shows it. RemainSeconds is game seconds until it is done (until its fuel runs out for a
 /// generator), already at the machine's speed; null when the game does not time it. CanRush is the game side's say
-/// that this machine has a safe way to be finished now.
+/// that this machine has a safe way to be finished now. TotalSeconds is the whole job at the same speed, for the
+/// progress bar; null when the game does not say. Icon is the game's web icon for the machine, relative to the WebUI
+/// folder; empty when it has none.
 /// </summary>
-public sealed record MachineRow(MachineKind Kind, long Id, string Name, Contents? Contents, MachineState State, double? RemainSeconds, bool CanRush);
+public sealed record MachineRow(MachineKind Kind, long Id, string Name, Contents? Contents, MachineState State, double? RemainSeconds, bool CanRush, double? TotalSeconds = null, string Icon = "")
+{
+    /// <summary>How much of the job is done, 0 to 1; null when the row is not running a job of known length.</summary>
+    public double? Progress => (State is MachineState.Running or MachineState.Paused) && RemainSeconds is { } remain && TotalSeconds is { } total && total > 0 && double.IsFinite(remain) && double.IsFinite(total)
+        ? Math.Clamp(1 - remain / total, 0, 1)
+        : null;
+}
 
 /// <summary>What one read of the home found.</summary>
 public abstract record MachineRead
@@ -106,8 +114,11 @@ public static class MachineKinds
 
 public static class MachineList
 {
+    /// <summary>Whether a row is listed under "Needs you": idle, finished or out of fuel.</summary>
+    public static bool IsWaiting(MachineRow row) => row.State is MachineState.Idle or MachineState.Finished or MachineState.OutOfFuel;
+
     /// <summary>The HUD button's count: machines waiting for the player, idle, finished or out of fuel.</summary>
-    public static int WaitingCount(IEnumerable<MachineRow> rows) => rows.Count(row => row.State is MachineState.Idle or MachineState.Finished or MachineState.OutOfFuel);
+    public static int WaitingCount(IEnumerable<MachineRow> rows) => rows.Count(IsWaiting);
 
     /// <summary>
     /// Machines waiting for the player come first, then the running ones soonest done first, then paused ones. Ties

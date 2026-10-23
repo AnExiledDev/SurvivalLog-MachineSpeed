@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.2
+
+- The Machines window has a new look to match the other hub windows: each machine has its picture, a progress bar on jobs of known length, and the list is split into what needs you and what is working. A machine that needs you says what to do (take out, add fuel, nothing loaded). The header shows how many machines are at home, how many need you and your survival points.
+- The Rush button shows its price beside it, and when you cannot afford it, says how many points it needs under it.
+- Made for Survival Log 1.1.19131.
+
 ## 0.5.1
 
 - New `ShredderAutoStart` setting (off by default): an idle shredder starts by itself when you put items into it. Taking items out does not start it.
