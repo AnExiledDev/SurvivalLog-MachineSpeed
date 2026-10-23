@@ -20,7 +20,7 @@ Each machine has its own speed. 2 means a job takes half the game time, 0.5 mean
 - **Shredder auto-start**: with `ShredderAutoStart` on, an idle shredder starts by itself when you put items into it.
 - **Follow Day Length**: with the Day Length mod, `FollowDayLength` keeps machines at their real-time pace on longer or shorter days.
 - **Amounts**: more output from the shredder, Ration Press, brewing, compost bins and harvests; bigger brews; faster robot charging; stronger fridges and freezers; more power per unit of generator fuel; and less wear on defense devices. See the Amounts section of [CONFIG.md](CONFIG.md).
-- **Machines window**: a Machines button in the tool column lists every machine at home with its picture, what it is making, the time left and when it finishes. Machines that need you are listed first with what to do; running jobs show a progress bar. Its badge counts the machines that need you. Esc closes the window.
+- **Machines window**: a Machines button in the tool column lists every machine at home with its picture, what it is making, the time left and when it finishes. Machines that need you are listed first with what to do, then working ones with a progress bar, then idle ones. The button shows how many machines are working and how many need you. Esc closes the window.
 - **Rush**: a Rush button in the Machines window finishes a running job now for survival points, 0.25 per game hour left by default, at least 1. Compost bins, plants, generators and paused jobs cannot be rushed.
 - **Done notices**: with Exiled's Toolkit, a notice pops up when a machine finishes, a drone comes back or a generator runs out of fuel.
 - **Finish clock**: `FinishClock` shows the game time a job finishes instead of the time left.

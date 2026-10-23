@@ -30,6 +30,7 @@ public static class OverviewTexts
     public static readonly Phrase NeedYou = new("{0} need you", "{0} 台待处理");
     public static readonly Phrase NeedsSection = new("Needs you", "待处理");
     public static readonly Phrase WorkingSection = new("Working", "进行中");
+    public static readonly Phrase IdleSection = new("Idle", "闲置");
     public static readonly Phrase ToClose = new("to close", "关闭");
 
     public static readonly Phrase Running = new("Running", "运行中");

@@ -15,7 +15,7 @@ namespace MachineSpeed;
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.machinespeed";
-    private const string Version = "0.5.2";
+    private const string Version = "0.5.3";
     private const string Section = "Machines";
     private const string ActionSpeedConfig = "com.dev.survivallog.actionspeed.cfg";
 

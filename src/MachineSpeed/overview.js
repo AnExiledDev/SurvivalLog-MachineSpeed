@@ -1,6 +1,6 @@
 // Machine Speed's Machines window. Runs in Root.html, the document every game page iframe sits in. Draws the window
 // over all of them in the gold style the other hub windows share, and puts a button with a
-// count badge in the HUD's tool column, built like the game's own buttons there. Every word and number comes from the
+// working and needs-you counts in the HUD's tool column, built like the game's own buttons there. Every word and number comes from the
 // plugin (OverviewView.cs); this script only draws them. Talks to the plugin through
 // vuplex.postMessage("slmod|machinespeed|<verb>") and is driven by window.__slmachineoverview.
 (function () {
@@ -18,7 +18,7 @@
   // A gear, drawn on the 24-unit grid the game's HUD icons use.
   var GEAR_PATH = 'M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z';
 
-  var state = { data: emptyData(), isOpen: false, isLive: false, title: 'Machines', tip: '', badge: 0 };
+  var state = { data: emptyData(), isOpen: false, isLive: false, title: 'Machines', tip: '', working: 0, needs: 0 };
   var ui = null;
   var shownKeys = '';
   var toastTimer = 0;
@@ -29,7 +29,7 @@
   var hasReportedHudPlaced = false;
 
   function emptyData() {
-    return { title: 'Machines', atHome: '', needYou: '', points: '', pointsLabel: '', needsTitle: '', workingTitle: '', toClose: '', note: '', rows: [] };
+    return { title: 'Machines', atHome: '', needYou: '', points: '', pointsLabel: '', needsTitle: '', workingTitle: '', idleTitle: '', toClose: '', note: '', rows: [] };
   }
 
   function send(message) {
@@ -115,7 +115,7 @@
     '.mso-state i{flex:none;width:8px;height:8px;border-radius:50%;background:#cbbfa8}',
     '.mso-finished .mso-state{color:#8cc56a}.mso-finished .mso-state i{background:#8cc56a;box-shadow:0 0 8px #8cc56a}.mso-finished::before{background:#8cc56a}',
     '.mso-outoffuel .mso-state{color:#e5654f}.mso-outoffuel .mso-state i{background:#e5654f;box-shadow:0 0 8px #e5654f}.mso-outoffuel::before{background:#e5654f}',
-    '.mso-idle .mso-state{color:#FFC83A}.mso-idle .mso-state i{background:#FFC83A;box-shadow:0 0 8px rgba(255,200,58,.35)}.mso-idle::before{background:#FFC83A}',
+    '.mso-idle{opacity:.6}.mso-idle .mso-state{color:#7a6e5a}.mso-idle .mso-state i{background:#7a6e5a}',
     '.mso-running .mso-state i{background:#FFC83A;animation:mso-pulse 1.6s ease-in-out infinite}',
     '.mso-paused{opacity:.72}.mso-paused .mso-state{color:#7a6e5a}.mso-paused .mso-state i{background:#7a6e5a}',
     '@keyframes mso-pulse{50%{opacity:.35}}',
@@ -258,7 +258,7 @@
   // flicker or lose the pointer's hover every second. Any other change draws the list afresh.
   function renderList(data) {
     var rows = data.rows || [];
-    var keys = rows.map(function (r) { return r.group + ':' + r.key; }).join(',') + '|' + (data.needsTitle || '') + '|' + (data.workingTitle || '');
+    var keys = rows.map(function (r) { return r.group + ':' + r.key; }).join(',') + '|' + (data.needsTitle || '') + '|' + (data.workingTitle || '') + '|' + (data.idleTitle || '');
 
     if (rows.length > 0 && keys === shownKeys) {
       var nodes = ui.list.querySelectorAll('.mso-row');
@@ -284,7 +284,8 @@
     var fragment = document.createDocumentFragment();
 
     addSection(fragment, data.needsTitle, rows.filter(function (r) { return r.group === 'needs'; }));
-    addSection(fragment, data.workingTitle, rows.filter(function (r) { return r.group !== 'needs'; }));
+    addSection(fragment, data.workingTitle, rows.filter(function (r) { return r.group === 'working'; }));
+    addSection(fragment, data.idleTitle, rows.filter(function (r) { return r.group === 'idle'; }));
     ui.list.appendChild(fragment);
     ui.list.scrollTop = scroll;
   }
@@ -503,9 +504,10 @@
     patchPagesSafely();
   }
 
-  // The number on the HUD button: machines that are idle, finished or out of fuel.
-  function badge(count) {
-    state.badge = Math.max(0, count | 0);
+  // The HUD button's counts: machines working (bottom corner) and machines that need the player (top corner).
+  function badge(working, needs) {
+    state.working = Math.max(0, working | 0);
+    state.needs = Math.max(0, needs | 0);
     hudVersion++;
     patchPagesSafely();
   }
@@ -514,7 +516,9 @@
 
   var HUD_CSS = [
     '.mso-hud-btn{position:relative}',
-    '.mso-hud-btn .mso-hud-badge{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#e53935;color:#fff;font-size:11px;font-weight:700;line-height:18px;text-align:center;pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.6)}'
+    '.mso-hud-btn .mso-hud-badge{position:absolute;right:-6px;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;font-size:11px;font-weight:700;line-height:18px;text-align:center;pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.6)}',
+    '.mso-hud-btn .mso-hud-needs{top:-6px;background:#e8b84a;color:#2a1f08}',
+    '.mso-hud-btn .mso-hud-working{bottom:-6px;background:#1c1f1a;color:#e8d9a8;border:1px solid rgba(232,184,74,.55);line-height:16px}'
   ].join('\n');
 
   // The HUD is a same-origin iframe, so its document can be reached from here; polled because the game creates and
@@ -592,12 +596,8 @@
     node.setAttribute('data-version', String(hudVersion));
     node.appendChild(gear(doc));
 
-    if (state.badge > 0) {
-      var count = doc.createElement('span');
-      count.className = 'mso-hud-badge';
-      count.textContent = state.badge > 99 ? '99+' : String(state.badge);
-      node.appendChild(count);
-    }
+    addCount(doc, node, 'mso-hud-needs', state.needs);
+    addCount(doc, node, 'mso-hud-working', state.working);
 
     node.appendChild(entryTip(doc));
     node.addEventListener('click', function (e) {
@@ -606,6 +606,15 @@
     });
 
     return node;
+  }
+
+  function addCount(doc, node, className, count) {
+    if (count <= 0) return;
+
+    var badge = doc.createElement('span');
+    badge.className = 'mso-hud-badge ' + className;
+    badge.textContent = count > 99 ? '99+' : String(count);
+    node.appendChild(badge);
   }
 
   function gear(doc) {

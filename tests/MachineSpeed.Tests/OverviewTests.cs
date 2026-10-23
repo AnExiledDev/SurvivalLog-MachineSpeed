@@ -206,7 +206,7 @@ public class OverviewCommandTests
 public class MachineListTests
 {
     [Fact]
-    public void The_badge_counts_machines_waiting_for_the_player()
+    public void The_badges_count_machines_working_and_machines_that_need_the_player_but_not_idle_ones()
     {
         var rows = new[]
         {
@@ -215,24 +215,28 @@ public class MachineListTests
             Row(MachineState.Finished, 3),
             Row(MachineState.OutOfFuel, 4),
             Row(MachineState.Paused, 5),
+            Row(MachineState.Idle, 6),
+            Row(MachineState.Running, 7, 30),
         };
 
-        Assert.Equal(3, MachineList.WaitingCount(rows));
+        Assert.Equal(3, MachineList.Count(rows, MachineGroup.Working));
+        Assert.Equal(2, MachineList.Count(rows, MachineGroup.Needs));
+        Assert.Equal(2, MachineList.Count(rows, MachineGroup.Idle));
     }
 
     [Fact]
-    public void Waiting_machines_come_first_then_running_ones_soonest_done_first()
+    public void Machines_that_need_the_player_come_first_then_running_ones_soonest_done_first_and_idle_ones_last()
     {
         var rows = new[]
         {
+            Row(MachineState.Idle, 4),
             Row(MachineState.Paused, 1),
             Row(MachineState.Running, 2, 900),
             Row(MachineState.Running, 3, 60),
-            Row(MachineState.Idle, 4),
             Row(MachineState.Finished, 5),
         };
 
-        Assert.Equal(new long[] { 5, 4, 3, 2, 1 }, MachineList.Ordered(rows).Select(row => row.Id));
+        Assert.Equal(new long[] { 5, 3, 2, 1, 4 }, MachineList.Ordered(rows).Select(row => row.Id));
     }
 
     private static MachineRow Row(MachineState state, long id, double? remain = null) => new(MachineKind.Shredder, id, "", null, state, remain, CanRush: false);
@@ -382,6 +386,16 @@ public class OverviewViewTests
     }
 
     [Fact]
+    public void An_idle_machine_is_listed_as_idle_not_as_needing_the_player()
+    {
+        var json = View(Brew(remain: 0) with { State = MachineState.Idle }, points: 0);
+
+        Assert.Contains("\"group\":\"idle\"", json);
+        Assert.Contains("\"idleTitle\":\"Idle\"", json);
+        Assert.Contains("\"needYou\":\"\"", json);
+    }
+
+    [Fact]
     public void A_running_job_is_listed_as_working_with_how_far_along_it_is()
     {
         var json = View(Brew(remain: 2700) with { TotalSeconds = 3600 }, points: 0);
@@ -399,10 +413,16 @@ public class OverviewViewTests
     [Fact]
     public void The_head_counts_the_machines_at_home_and_those_waiting_on_the_player()
     {
-        var rows = new[] { Brew(remain: 60), Brew(remain: 0) with { Id = 8, State = MachineState.Finished }, Brew(remain: 0) with { Id = 9, State = MachineState.Idle } };
+        var rows = new[]
+        {
+            Brew(remain: 60),
+            Brew(remain: 0) with { Id = 8, State = MachineState.Finished },
+            Brew(remain: 0) with { Id = 9, State = MachineState.Idle },
+            Brew(remain: 0) with { Id = 10, State = MachineState.OutOfFuel },
+        };
         var json = OverviewView.Write(new MachineRead.Home(rows, 38), English);
 
-        Assert.Contains("\"atHome\":\"3 at home\"", json);
+        Assert.Contains("\"atHome\":\"4 at home\"", json);
         Assert.Contains("\"needYou\":\"2 need you\"", json);
         Assert.Contains("\"points\":\"38\"", json);
     }

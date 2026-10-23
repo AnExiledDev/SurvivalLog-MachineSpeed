@@ -29,7 +29,7 @@ internal sealed class OverviewSession
     private bool _isOpen;
     private bool _isOpenAsked;
     private string _shownView = "";
-    private int? _sentBadge;
+    private (int Working, int Needs)? _sentBadge;
     private (bool IsLive, bool IsChinese)? _sentLive;
     private float _nextRefreshAt;
     private IntPtr _world = IntPtr.Zero;
@@ -155,8 +155,8 @@ internal sealed class OverviewSession
     }
 
     /// <summary>
-    /// Reads the home once: the HUD button shows while a game is loaded, its badge counts machines waiting for the
-    /// player, machines that just finished get a toast, and an open window is redrawn when its view changed.
+    /// Reads the home once: the HUD button shows while a game is loaded, its badges count machines working and machines
+    /// that need the player, machines that just finished get a toast, and an open window is redrawn when its view changed.
     /// </summary>
     private void Refresh(float now)
     {
@@ -166,7 +166,7 @@ internal sealed class OverviewSession
 
         WatchForDone(read);
         SendLive(read is not MachineRead.NoGame);
-        SendBadge(read is MachineRead.Home home ? MachineList.WaitingCount(home.Rows) : 0);
+        SendBadge(read is MachineRead.Home home ? (MachineList.Count(home.Rows, MachineGroup.Working), MachineList.Count(home.Rows, MachineGroup.Needs)) : (0, 0));
 
         if (_isOpen) Show(read, nowSeconds, isOpening: false);
     }
@@ -204,10 +204,10 @@ internal sealed class OverviewSession
         if (_page.Live(isLive, OverviewTexts.Title.Pick(isChinese), OverviewTexts.ButtonTip.Pick(isChinese))) _sentLive = (isLive, isChinese);
     }
 
-    private void SendBadge(int count)
+    private void SendBadge((int Working, int Needs) counts)
     {
-        if (count == _sentBadge) return;
-        if (_page.Badge(count)) _sentBadge = count;
+        if (counts == _sentBadge) return;
+        if (_page.Badge(counts.Working, counts.Needs)) _sentBadge = counts;
     }
 
     private void Toggle()

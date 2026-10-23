@@ -53,8 +53,8 @@ internal sealed class OverviewPage
     /// <summary>Whether a game is loaded (the HUD button shows only then), with the button's tooltip.</summary>
     public bool Live(bool isLive, string title, string tip) => Call($"live({(isLive ? "true" : "false")},{JsText.Literal(title)},{JsText.Literal(tip)})");
 
-    /// <summary>The count badge on the HUD button, sent whether or not the window is open.</summary>
-    public bool Badge(int count) => Call($"badge({count})");
+    /// <summary>The HUD button's two counts, machines working and machines that need the player, sent whether or not the window is open.</summary>
+    public bool Badge(int working, int needs) => Call($"badge({working},{needs})");
 
     private bool Call(string expression) => Run($"{Handle}?{Handle}.{expression}:{NoScriptReply}");
 

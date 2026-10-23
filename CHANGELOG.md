@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.3
+
+- Idle machines (nothing loaded, a drone at home) are no longer listed under Needs you. They have their own Idle section at the bottom of the Machines window and are not counted.
+- The Machines button shows two numbers: how many machines are working (bottom corner) and how many are finished or out of fuel and need you (top corner). Each hides at zero.
+- Made for Survival Log 1.1.19131.
+
 ## 0.5.2
 
 - The Machines window has a new look to match the other hub windows: each machine has its picture, a progress bar on jobs of known length, and the list is split into what needs you and what is working. A machine that needs you says what to do (take out, add fuel, nothing loaded). The header shows how many machines are at home, how many need you and your survival points.

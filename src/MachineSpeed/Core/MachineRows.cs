@@ -28,6 +28,14 @@ public enum MachineState
     OutOfFuel,
 }
 
+/// <summary>The window's sections, in the order they are listed.</summary>
+public enum MachineGroup
+{
+    Needs,
+    Working,
+    Idle,
+}
+
 /// <summary>What a machine holds or makes, for the window's second line.</summary>
 public abstract record Contents
 {
@@ -114,15 +122,23 @@ public static class MachineKinds
 
 public static class MachineList
 {
-    /// <summary>Whether a row is listed under "Needs you": idle, finished or out of fuel.</summary>
-    public static bool IsWaiting(MachineRow row) => row.State is MachineState.Idle or MachineState.Finished or MachineState.OutOfFuel;
+    /// <summary>
+    /// The window's section for a row. Only a finished machine or one out of fuel needs the player; an idle one is
+    /// simply not in use, so it is listed last and not counted.
+    /// </summary>
+    public static MachineGroup Group(MachineRow row) => row.State switch
+    {
+        MachineState.Finished or MachineState.OutOfFuel => MachineGroup.Needs,
+        MachineState.Running or MachineState.Paused => MachineGroup.Working,
+        _ => MachineGroup.Idle,
+    };
 
-    /// <summary>The HUD button's count: machines waiting for the player, idle, finished or out of fuel.</summary>
-    public static int WaitingCount(IEnumerable<MachineRow> rows) => rows.Count(IsWaiting);
+    /// <summary>How many rows are in a section: the HUD button shows the Working and Needs counts.</summary>
+    public static int Count(IEnumerable<MachineRow> rows, MachineGroup group) => rows.Count(row => Group(row) == group);
 
     /// <summary>
-    /// Machines waiting for the player come first, then the running ones soonest done first, then paused ones. Ties
-    /// keep the kind order and then the name, so rows do not jump about between refreshes.
+    /// Machines that need the player come first, then the running ones soonest done first, then paused ones, then idle
+    /// ones. Ties keep the kind order and then the name, so rows do not jump about between refreshes.
     /// </summary>
     public static IReadOnlyList<MachineRow> Ordered(IEnumerable<MachineRow> rows) =>
         rows.OrderBy(row => Rank(row.State))
@@ -136,9 +152,9 @@ public static class MachineList
     {
         MachineState.Finished => 0,
         MachineState.OutOfFuel => 1,
-        MachineState.Idle => 2,
-        MachineState.Running => 3,
-        MachineState.Paused => 4,
+        MachineState.Running => 2,
+        MachineState.Paused => 3,
+        MachineState.Idle => 4,
         _ => throw new ArgumentOutOfRangeException(nameof(state), state, null),
     };
 }

@@ -27,12 +27,14 @@ public static class OverviewView
         json.Append(',');
         Field(json, "workingTitle", OverviewTexts.WorkingSection.Pick(isChinese));
         json.Append(',');
+        Field(json, "idleTitle", OverviewTexts.IdleSection.Pick(isChinese));
+        json.Append(',');
         Field(json, "toClose", OverviewTexts.ToClose.Pick(isChinese));
 
         switch (read)
         {
             case MachineRead.Home home:
-                var waiting = MachineList.WaitingCount(home.Rows);
+                var waiting = MachineList.Count(home.Rows, MachineGroup.Needs);
 
                 json.Append(',');
                 Field(json, "atHome", home.Rows.Count == 0 ? "" : OverviewTexts.AtHome.Say(isChinese, home.Rows.Count));
@@ -78,7 +80,7 @@ public static class OverviewView
         json.Append(',');
         Field(json, "stateText", OverviewTexts.State(row, isChinese));
         json.Append(',');
-        Field(json, "group", MachineList.IsWaiting(row) ? "needs" : "working");
+        Field(json, "group", MachineList.Group(row).ToString().ToLowerInvariant());
         json.Append(',');
         Field(json, "icon", row.Icon);
         json.Append(',');
