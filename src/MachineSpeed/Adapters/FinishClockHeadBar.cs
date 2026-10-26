@@ -16,29 +16,48 @@ internal static class FinishClockHeadBar
     private const int NotWatching = int.MinValue;
 
     private static bool _isOn;
+    private static bool _isPatched;
+    private static Harmony? _harmony;
     private static Action<string> _log = _ => { };
     private static readonly DistinctFailures Failures = new();
 
+    /// <summary>
+    /// The hook goes in the first time the setting is on, not at start: the game updates these timers for every plant,
+    /// barrel and vat, and a player who never turns the finish clock on should not pay for a hook that does nothing.
+    /// </summary>
     public static void Apply(Harmony harmony, SpeedLog log)
     {
+        _harmony = harmony;
         _log = log.Write;
-
-        try
-        {
-            harmony.Patch(
-                AccessTools.Method(typeof(FurnitureHeadBar), "UpdatePlantTimeText"),
-                prefix: new HarmonyMethod(typeof(FinishClockHeadBar), nameof(Before)),
-                postfix: new HarmonyMethod(typeof(FinishClockHeadBar), nameof(After)));
-            log.Write("timers over machines can show their finish time");
-        }
-        catch (Exception ex)
-        {
-            log.Write($"could not hook FurnitureHeadBar.UpdatePlantTimeText, timers over machines keep showing time left: {ex.Message}");
-        }
     }
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>
-    public static void Use(bool isOn) => _isOn = isOn;
+    public static void Use(bool isOn)
+    {
+        _isOn = isOn;
+
+        if (isOn && !_isPatched) Patch();
+    }
+
+    private static void Patch()
+    {
+        _isPatched = true;
+
+        if (_harmony == null) return;
+
+        try
+        {
+            _harmony.Patch(
+                AccessTools.Method(typeof(FurnitureHeadBar), "UpdatePlantTimeText"),
+                prefix: new HarmonyMethod(typeof(FinishClockHeadBar), nameof(Before)),
+                postfix: new HarmonyMethod(typeof(FinishClockHeadBar), nameof(After)));
+            _log("timers over machines can show their finish time");
+        }
+        catch (Exception ex)
+        {
+            _log($"could not hook FurnitureHeadBar.UpdatePlantTimeText, timers over machines keep showing time left: {ex.Message}");
+        }
+    }
 
     private static void Before(FurnitureHeadBar __instance, out int __state)
     {

@@ -97,7 +97,7 @@ internal static class ShredderAutoStart
 
             var isStarted = __instance.OnShredderStart();
 
-            _first.Note(() => $"first refilled shredder: {__state} to {now} items, started {isStarted}");
+            if (_first.IsPending) _first.Note($"first refilled shredder: {__state} to {now} items, started {isStarted}");
         }
         catch (Exception ex)
         {

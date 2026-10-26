@@ -101,7 +101,7 @@ internal static class ShredderOutputPatch
             {
                 var count = Carry.Take(configId, gameCount, _output);
 
-                _first.Note(() => $"first shredder payout: item {configId}, game {gameCount}, now {count}");
+                if (_first.IsPending) _first.Note($"first shredder payout: item {configId}, game {gameCount}, now {count}");
             }
         }
         catch (Exception ex)
@@ -160,7 +160,7 @@ internal static class RationPressOutputPatch
             SpreadFlavors(batch, gameBlocks, blocks);
             batch.Blocks = blocks;
             batch.Crumbs = crumbs;
-            _first.Note(() => $"first ration batch output: game {gameBlocks} blocks and {gameCrumbs} crumbs, now {blocks} and {crumbs}");
+            if (_first.IsPending) _first.Note($"first ration batch output: game {gameBlocks} blocks and {gameCrumbs} crumbs, now {blocks} and {crumbs}");
         }
         catch (Exception ex)
         {
@@ -223,7 +223,7 @@ internal static class BrewingOutputPatch
             var count = Carry.Take(resultItemId, gameCount, _output);
 
             resultCount = count;
-            _first.Note(() => $"first brew output: game {gameCount} bottles, now {count}");
+            if (_first.IsPending) _first.Note($"first brew output: game {gameCount} bottles, now {count}");
         }
         catch (Exception ex)
         {
@@ -257,6 +257,7 @@ internal static class CompostOutputPatch
     private static HookFailures _failures = HookFailures.Silent;
     private static FirstUse _first = FirstUse.Silent;
     private static (long Bin, int Product, int Count)? _pending;
+    private static readonly StampedCache<int, long, bool> BinsThisFrame = new();
 
     public static void Apply(Harmony harmony, SpeedLog log)
     {
@@ -283,7 +284,7 @@ internal static class CompostOutputPatch
 
             var bin = item._OwnerId_k__BackingField;
 
-            if (!__instance.IsInCompostBin(bin) || !__instance.TryGetCompostTierProduct(bin, item, config, out var product) || product <= 0) return;
+            if (!IsBin(__instance, bin) || !__instance.TryGetCompostTierProduct(bin, item, config, out var product) || product <= 0) return;
 
             _pending = (bin, product, item._ItemCount_k__BackingField);
         }
@@ -291,6 +292,22 @@ internal static class CompostOutputPatch
         {
             _failures.Report(ex);
         }
+    }
+
+    /// <summary>
+    /// The game checks every item that can rot at the turn of each hour, all in one frame, so whether a holder is a bin
+    /// is asked once per holder in that frame, not once per item.
+    /// </summary>
+    private static bool IsBin(ItemManager items, long holder)
+    {
+        BinsThisFrame.Use(UnityEngine.Time.frameCount);
+
+        if (BinsThisFrame.TryGet(holder, out var isBin)) return isBin;
+
+        isBin = items.IsInCompostBin(holder);
+        BinsThisFrame.Set(holder, isBin);
+
+        return isBin;
     }
 
     private static void AddExtra(ItemManager __instance, bool __result, int currentHour)
@@ -308,7 +325,7 @@ internal static class CompostOutputPatch
             var timeLeft = productConfig.Life <= 0 ? -1 : 24 * productConfig.Life;
             var isAdded = __instance.TryAddItemToBag(bin, product, extra, currentHour, timeLeft, productConfig.UseTimes, 1f, null, 0, null, null, 0, 0, false, false, false, false, 0);
 
-            _first.Note(() => $"first compost output: game {gameCount} of item {product}, {extra} more {(isAdded ? "added" : "did not fit")}");
+            if (_first.IsPending) _first.Note($"first compost output: game {gameCount} of item {product}, {extra} more {(isAdded ? "added" : "did not fit")}");
         }
         catch (Exception ex)
         {
@@ -375,7 +392,7 @@ internal static class HarvestOutputPatch
                 var count = Carry.Take(crop, gameCount, _output);
 
                 items[crop] = count;
-                _first.Note(() => $"first harvest output: item {crop}, game {gameCount}, now {count}");
+                if (_first.IsPending) _first.Note($"first harvest output: item {crop}, game {gameCount}, now {count}");
             }
         }
         catch (Exception ex)

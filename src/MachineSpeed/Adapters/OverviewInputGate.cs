@@ -49,7 +49,17 @@ internal static class OverviewInputGate
         }
     }
 
-    private static bool SkipWhileBlocked() => !(_isWindowOpen || Time.frameCount <= _blockedThroughFrame);
+    // Runs every frame, so the frame count is read only in the frame or two after the window closes.
+    private static bool SkipWhileBlocked()
+    {
+        if (_isWindowOpen) return false;
+        if (_blockedThroughFrame < 0) return true;
+        if (Time.frameCount <= _blockedThroughFrame) return false;
+
+        _blockedThroughFrame = -1;
+
+        return true;
+    }
 
     private static void RouteClicksToWindow(ref bool __result)
     {

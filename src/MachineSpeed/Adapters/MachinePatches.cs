@@ -45,7 +45,7 @@ internal static class ShredderPatch
             var seconds = Scaling.Seconds(gameSeconds, _speed);
 
             totalSeconds = seconds;
-            _first.Note(() => $"first shred: game {gameSeconds}s, now {seconds}s");
+            if (_first.IsPending) _first.Note($"first shred: game {gameSeconds}s, now {seconds}s");
         }
         catch (Exception ex)
         {
@@ -107,7 +107,7 @@ internal static class RationPressPatch
             var seconds = Scaling.Seconds(gameSeconds, _speed);
 
             totalSeconds = seconds;
-            _first.Note(() => $"first ration batch: game {gameSeconds}s, now {seconds}s");
+            if (_first.IsPending) _first.Note($"first ration batch: game {gameSeconds}s, now {seconds}s");
         }
         catch (Exception ex)
         {
@@ -188,7 +188,7 @@ internal static class PlantGrowthPatch
             var time = Scaling.Duration(gameTime, _speed);
 
             __result = time;
-            _first.Note(() => $"first plant growth time: game {gameTime:0.##}, now {time:0.##}");
+            if (_first.IsPending) _first.Note($"first plant growth time: game {gameTime:0.##}, now {time:0.##}");
         }
         catch (Exception ex)
         {
@@ -232,7 +232,7 @@ internal static class FuelBurnPatch
             var burn = Scaling.Burn(gameBurn, _speed);
 
             burnValueToConsume = burn;
-            _first.Note(() => $"first fuel burn: game {gameBurn:0.###}, now {burn:0.###}");
+            if (_first.IsPending) _first.Note($"first fuel burn: game {gameBurn:0.###}, now {burn:0.###}");
         }
         catch (Exception ex)
         {
@@ -284,7 +284,7 @@ internal static class DroneTripPatch
             var back = Scaling.ReturnTime(departSec, gameReturn, _speed);
 
             returnSec = back;
-            _first.Note(() => $"first drone trip: game {gameReturn - departSec}s, now {back - departSec}s");
+            if (_first.IsPending) _first.Note($"first drone trip: game {gameReturn - departSec}s, now {back - departSec}s");
         }
         catch (Exception ex)
         {
@@ -337,7 +337,7 @@ internal static class CookingPatch
 
             cookDuration = duration;
             _cooks?.Started(__instance.Pointer.ToInt64(), _speed);
-            _first.Note(() => $"first cook: game {gameDuration:0.##}s, now {duration:0.##}s");
+            if (_first.IsPending) _first.Note($"first cook: game {gameDuration:0.##}s, now {duration:0.##}s");
         }
         catch (Exception ex)
         {
@@ -412,7 +412,7 @@ internal static class CookingFuelPatch
             var rate = Scaling.CookingFuelRate(gameRate, CookingPatch.SpeedOf(__instance), _fuel);
 
             fuelRate = rate;
-            _first.Note(() => $"first cooking fuel: game rate {gameRate:0.###}, now {rate:0.###}");
+            if (_first.IsPending) _first.Note($"first cooking fuel: game rate {gameRate:0.###}, now {rate:0.###}");
         }
         catch (Exception ex)
         {

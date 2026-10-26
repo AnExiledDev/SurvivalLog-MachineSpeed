@@ -102,11 +102,13 @@
   // ===== Pages =====
 
   var PAGES = [
-    { path: '/BrewPanel/', draw: 'renderFerment', fix: fixBrew },
-    { path: '/DyePanel/', draw: 'renderProd', fix: fixDye },
-    { path: '/Shredder/', draw: 'renderProc', wraps: { mmss: shredderClock, fmtDur: shredderTip } }
+    { key: 'brew', path: '/BrewPanel/', draw: 'renderFerment', fix: fixBrew },
+    { key: 'dye', path: '/DyePanel/', draw: 'renderProd', fix: fixDye },
+    { key: 'shredder', path: '/Shredder/', draw: 'renderProc', wraps: { mmss: shredderClock, fmtDur: shredderTip } }
   ];
 
+  var KEYS = ['shredder', 'brew', 'dye'];
+  var SEEN = '__slmachinespeedSeen';
   var patched = [];
 
   function patchPages() {
@@ -114,18 +116,31 @@
 
     for (var i = 0; i < frames.length; i++) {
       var w = null;
+      var path = null;
 
       try {
         w = frames[i].contentWindow;
+        path = w ? String(w.location.pathname) : null;
       } catch (e) {}
 
-      if (!w || w[MARK]) continue;
+      // A loaded page that is none of the panels is passed over until it goes to another address.
+      if (path === null || w[MARK] || w[SEEN] === path) continue;
+
+      var isPanel = false;
 
       for (var p = 0; p < PAGES.length; p++) {
+        if (path.indexOf(PAGES[p].path) < 0) continue;
+
+        isPanel = true;
+
         try {
-          if (String(w.location.pathname).indexOf(PAGES[p].path) >= 0 && typeof w[PAGES[p].draw] === 'function') patch(w, PAGES[p]);
+          if (typeof w[PAGES[p].draw] === 'function') patch(w, PAGES[p]);
         } catch (e) {}
       }
+
+      try {
+        if (!isPanel && w.document && w.document.readyState === 'complete') w[SEEN] = path;
+      } catch (e) {}
     }
   }
 
@@ -149,7 +164,7 @@
 
       return result;
     };
-    patched.push({ win: w, draw: page.draw });
+    patched.push({ win: w, draw: page.draw, key: page.key });
 
     // The game may have drawn the panel before it was wrapped.
     try {
@@ -163,15 +178,16 @@
       if (typeof w[name] === 'function') w[name] = page.wraps[name](w, w[name]);
     }
 
-    patched.push({ win: w, draw: page.draw });
+    patched.push({ win: w, draw: page.draw, key: page.key });
 
     try {
       w[page.draw]();
     } catch (e) {}
   }
 
-  // Panels already open are drawn again by the game's own function, which now ends with the fix.
-  function redraw() {
+  // Panels already open whose times changed are drawn again by the game's own function, which now ends with the fix.
+  // A panel whose machine's times are the same is left alone.
+  function redraw(changed) {
     var open = [];
 
     for (var i = 0; i < patched.length; i++) {
@@ -181,11 +197,25 @@
         if (entry.win.closed || !entry.win.document) continue;
 
         open.push(entry);
-        entry.win[entry.draw]();
+        if (changed[entry.key]) entry.win[entry.draw]();
       } catch (e) {}
     }
 
     patched = open;
+  }
+
+  function changedKeys(before, after) {
+    var changed = {};
+
+    for (var i = 0; i < KEYS.length; i++) {
+      changed[KEYS[i]] = JSON.stringify(before[KEYS[i]]) !== JSON.stringify(after[KEYS[i]]);
+    }
+
+    return changed;
+  }
+
+  function isAllOff() {
+    return !state.shredder && !state.brew && !state.dye;
   }
 
   function set(next) {
@@ -193,13 +223,18 @@
 
     if (json === lastJson) return;
 
+    var before = state;
+
     lastJson = json;
     state = next || { shredder: null, brew: null, dye: null };
     patchPages();
-    redraw();
+    redraw(changedKeys(before, state));
   }
 
+  // With every machine at the game's pace there is nothing to put in; set() looks for panels when that changes.
   setInterval(function () {
+    if (isAllOff()) return;
+
     try {
       patchPages();
     } catch (e) {}

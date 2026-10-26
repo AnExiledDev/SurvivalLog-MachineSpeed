@@ -92,7 +92,11 @@ internal static class Machine
     public static HarmonyMethod Patch(Type patchClass, string method) => new(patchClass, method);
 }
 
-/// <summary>Writes the first sped-up use of a machine to the log file, so a player's log shows the hook ran and what it wrote.</summary>
+/// <summary>
+/// Writes the first sped-up use of a machine to the log file, so a player's log shows the hook ran and what it wrote.
+/// Callers check <see cref="IsPending"/> before building the line, so a hook that runs every frame builds no string and
+/// no closure once the line is written.
+/// </summary>
 internal sealed class FirstUse
 {
     private readonly Action<string> _logFileOnly;
@@ -102,11 +106,13 @@ internal sealed class FirstUse
 
     public static FirstUse Silent { get; } = new(_ => { });
 
-    public void Note(Func<string> line)
+    public bool IsPending => !_isLogged;
+
+    public void Note(string line)
     {
         if (_isLogged) return;
 
         _isLogged = true;
-        _logFileOnly(line());
+        _logFileOnly(line);
     }
 }

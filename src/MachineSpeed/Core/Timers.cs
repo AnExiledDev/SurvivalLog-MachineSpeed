@@ -116,27 +116,55 @@ public readonly record struct BrewTimes(double? Preview, double? Remain);
 public readonly record struct DyeTimes(double? PerBucket, double? Preview, double? BucketRemain, double? TotalRemain);
 
 /// <summary>
+/// Everything the page script is told, in the whole seconds it is told them. Two prints are equal exactly when the
+/// page would be sent the same text, so an unchanged second is found without building any text.
+/// </summary>
+public readonly record struct PagePrint(
+    float? Shredder,
+    bool HasBrew,
+    long? BrewPreview,
+    long? BrewRemain,
+    bool HasDye,
+    long? DyePerBucket,
+    long? DyePreview,
+    long? DyeBucketRemain,
+    long? DyeTotalRemain);
+
+/// <summary>
 /// What the page script is told, as JSON. A machine left at the game's pace is sent as null, so its panel stays
 /// exactly as the game draws it.
 /// </summary>
 public static class PageState
 {
-    public static string Json(Speed shredder, BrewTimes? brew, DyeTimes? dye)
+    public static PagePrint Print(Speed shredder, BrewTimes? brew, DyeTimes? dye) => new(
+        shredder.IsGamePace ? null : shredder.Value,
+        brew.HasValue,
+        Seconds(brew?.Preview),
+        Seconds(brew?.Remain),
+        dye.HasValue,
+        Seconds(dye?.PerBucket),
+        Seconds(dye?.Preview),
+        Seconds(dye?.BucketRemain),
+        Seconds(dye?.TotalRemain));
+
+    public static string Json(Speed shredder, BrewTimes? brew, DyeTimes? dye) => Json(Print(shredder, brew, dye));
+
+    public static string Json(PagePrint print)
     {
         var json = new StringBuilder("{\"shredder\":");
 
-        json.Append(shredder.IsGamePace ? "null" : shredder.Value.ToString("R", CultureInfo.InvariantCulture));
+        json.Append(print.Shredder is { } shredder ? shredder.ToString("R", CultureInfo.InvariantCulture) : "null");
         json.Append(",\"brew\":");
 
-        if (brew is { } b) json.Append("{\"preview\":").Append(Seconds(b.Preview)).Append(",\"remain\":").Append(Seconds(b.Remain)).Append('}');
+        if (print.HasBrew) json.Append("{\"preview\":").Append(Text(print.BrewPreview)).Append(",\"remain\":").Append(Text(print.BrewRemain)).Append('}');
         else json.Append("null");
 
         json.Append(",\"dye\":");
 
-        if (dye is { } d)
+        if (print.HasDye)
         {
-            json.Append("{\"perBucket\":").Append(Seconds(d.PerBucket)).Append(",\"preview\":").Append(Seconds(d.Preview))
-                .Append(",\"bucketRemain\":").Append(Seconds(d.BucketRemain)).Append(",\"totalRemain\":").Append(Seconds(d.TotalRemain)).Append('}');
+            json.Append("{\"perBucket\":").Append(Text(print.DyePerBucket)).Append(",\"preview\":").Append(Text(print.DyePreview))
+                .Append(",\"bucketRemain\":").Append(Text(print.DyeBucketRemain)).Append(",\"totalRemain\":").Append(Text(print.DyeTotalRemain)).Append('}');
         }
         else
         {
@@ -146,7 +174,8 @@ public static class PageState
         return json.Append('}').ToString();
     }
 
-    /// <summary>Whole seconds, rounded up so a job still running never reads 0.</summary>
-    private static string Seconds(double? value) =>
-        value is { } v && double.IsFinite(v) ? ((long)Math.Ceiling(Math.Max(0, v))).ToString(CultureInfo.InvariantCulture) : "null";
+    /// <summary>Whole seconds, rounded up so a job still running never reads 0; null for no time.</summary>
+    private static long? Seconds(double? value) => value is { } v && double.IsFinite(v) ? (long)Math.Ceiling(Math.Max(0, v)) : null;
+
+    private static string Text(long? seconds) => seconds is { } s ? s.ToString(CultureInfo.InvariantCulture) : "null";
 }

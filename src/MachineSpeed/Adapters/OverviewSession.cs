@@ -32,6 +32,7 @@ internal sealed class OverviewSession
     private (int Working, int Needs)? _sentBadge;
     private (bool IsLive, bool IsChinese)? _sentLive;
     private float _nextRefreshAt;
+    private bool _isScanning;
     private IntPtr _world = IntPtr.Zero;
 
     public OverviewSession(MachineReader reader, OverviewPage page, Action<string> log)
@@ -52,7 +53,7 @@ internal sealed class OverviewSession
         _pointsPerHour = RushCost.Rate(pointsPerHour);
         _isFinishClock = isFinishClock;
         _shownView = "";
-        _nextRefreshAt = 0f;
+        RefreshNow();
     }
 
     public void Update()
@@ -77,7 +78,15 @@ internal sealed class OverviewSession
             return;
         }
 
-        if (now >= _nextRefreshAt) Refresh(now);
+        if (_isScanning) ContinueRefresh();
+        else if (now >= _nextRefreshAt) StartRefresh(now);
+    }
+
+    /// <summary>The next frame starts a fresh read, and any read under way is dropped for it.</summary>
+    private void RefreshNow()
+    {
+        _nextRefreshAt = 0f;
+        _isScanning = false;
     }
 
     /// <summary>A click on a done toast. The window opens in this mod's own frame, like a click on its HUD button.</summary>
@@ -114,6 +123,9 @@ internal sealed class OverviewSession
             case OverviewCommand.NoScript:
                 _page.Install();
                 break;
+            case OverviewCommand.TimerNoScript:
+                TimerPage.AskInstall();
+                break;
             case OverviewCommand.Note note:
                 _log("Machines window page: " + note.Text);
                 break;
@@ -142,7 +154,7 @@ internal sealed class OverviewSession
         _sentLive = null;
         _sentBadge = null;
         _shownView = "";
-        _nextRefreshAt = 0f;
+        RefreshNow();
     }
 
     private void Rush(OverviewCommand.Rush rush)
@@ -151,31 +163,65 @@ internal sealed class OverviewSession
         var outcome = _rusher.Rush(rush.Kind, rush.Id, _pointsPerHour, isChinese);
 
         _page.Status(OverviewTexts.Describe(outcome, isChinese));
-        _nextRefreshAt = 0f;
+        RefreshNow();
     }
 
     /// <summary>
-    /// Reads the home once: the HUD button shows while a game is loaded, its badges count machines working and machines
-    /// that need the player, machines that just finished get a toast, and an open window is redrawn when its view changed.
+    /// Starts reading the home. The read is spread over the next few frames; with no game or away from home the answer
+    /// is known at once.
     /// </summary>
-    private void Refresh(float now)
+    private void StartRefresh(float now)
     {
         _nextRefreshAt = now + (_isOpen ? OpenRefreshSeconds : ClosedRefreshSeconds);
 
-        var (read, nowSeconds) = _reader.Read();
+        if (_reader.BeginScan(out var early))
+        {
+            _isScanning = true;
 
-        WatchForDone(read);
-        SendLive(read is not MachineRead.NoGame);
+            return;
+        }
+
+        Finish(early!, 0);
+    }
+
+    /// <summary>A read dropped on the way (another game loaded, home left) is started again on the next frame.</summary>
+    private void ContinueRefresh()
+    {
+        if (!_reader.ContinueScan(out var read, out var nowSeconds)) return;
+
+        _isScanning = false;
+
+        if (read == null)
+        {
+            _nextRefreshAt = 0f;
+
+            return;
+        }
+
+        Finish(read, nowSeconds);
+    }
+
+    /// <summary>
+    /// One read of the home is in: the HUD button shows while a game is loaded, its badges count machines working and
+    /// machines that need the player, machines that just finished get a toast, and an open window is redrawn when its
+    /// view changed.
+    /// </summary>
+    private void Finish(MachineRead read, long nowSeconds)
+    {
+        var isChinese = IsChinese;
+
+        WatchForDone(read, isChinese);
+        SendLive(read is not MachineRead.NoGame, isChinese);
         SendBadge(read is MachineRead.Home home ? (MachineList.Count(home.Rows, MachineGroup.Working), MachineList.Count(home.Rows, MachineGroup.Needs)) : (0, 0));
 
-        if (_isOpen) Show(read, nowSeconds, isOpening: false);
+        if (_isOpen) Show(read, nowSeconds, isOpening: false, isChinese);
     }
 
     /// <summary>
     /// Every read at home goes past the watch, toasts on or off, so turning toasts on later does not announce old news.
     /// Away from home, or in another game, the watch starts afresh.
     /// </summary>
-    private void WatchForDone(MachineRead read)
+    private void WatchForDone(MachineRead read, bool isChinese)
     {
         var world = GameSingleton.Existing<BattleLogicWorld>()?.Pointer ?? IntPtr.Zero;
 
@@ -191,15 +237,11 @@ internal sealed class OverviewSession
 
         if (!_isToasting) return;
 
-        var isChinese = IsChinese;
-
-        foreach (var note in notes) _toasts.Show(note, isChinese);
+        for (var i = 0; i < notes.Count; i++) _toasts.Show(notes[i], isChinese);
     }
 
-    private void SendLive(bool isLive)
+    private void SendLive(bool isLive, bool isChinese)
     {
-        var isChinese = IsChinese;
-
         if (_sentLive == (isLive, isChinese)) return;
         if (_page.Live(isLive, OverviewTexts.Title.Pick(isChinese), OverviewTexts.ButtonTip.Pick(isChinese))) _sentLive = (isLive, isChinese);
     }
@@ -219,18 +261,23 @@ internal sealed class OverviewSession
     /// <summary>With no game loaded there is nothing to show and the window stays shut; anything else opens it.</summary>
     private void Open()
     {
+        // Opening reads the home whole, at once, and takes the place of any read spread over frames.
+        _isScanning = false;
+
         var (read, nowSeconds) = _reader.Read();
+        var isChinese = IsChinese;
 
         if (read is MachineRead.NoGame)
         {
-            _page.Status(OverviewTexts.NoGame.Pick(IsChinese));
+            _page.Status(OverviewTexts.NoGame.Pick(isChinese));
+            _nextRefreshAt = 0f;
 
             return;
         }
 
         _isOpen = true;
         OverviewInputGate.WindowOpened();
-        Show(read, nowSeconds, isOpening: true);
+        Show(read, nowSeconds, isOpening: true, isChinese);
         _nextRefreshAt = Time.unscaledTime + OpenRefreshSeconds;
         _log("Machines window opened");
     }
@@ -244,7 +291,7 @@ internal sealed class OverviewSession
         _page.Close();
     }
 
-    private void Show(MachineRead read, long nowSeconds, bool isOpening)
+    private void Show(MachineRead read, long nowSeconds, bool isOpening, bool isChinese)
     {
         if (read is MachineRead.NoGame)
         {
@@ -253,7 +300,7 @@ internal sealed class OverviewSession
             return;
         }
 
-        var view = OverviewView.Write(read, new ViewSettings(IsChinese, _pointsPerHour, _isFinishClock, nowSeconds));
+        var view = OverviewView.Write(read, new ViewSettings(isChinese, _pointsPerHour, _isFinishClock, nowSeconds));
 
         if (isOpening)
         {

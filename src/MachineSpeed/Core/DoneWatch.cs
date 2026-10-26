@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace MachineSpeed.Core;
@@ -20,29 +21,38 @@ public sealed class DoneWatch
 {
     private readonly Dictionary<(MachineKind Kind, long Id), MachineState> _lastStates = new();
 
-    public IReadOnlyList<DoneNote> See(IEnumerable<MachineRow> rows)
-    {
-        var notes = new List<DoneNote>();
-        var seen = new HashSet<(MachineKind, long)>();
+    // Kept between reads and emptied after each, so a read that finds nothing new allocates nothing.
+    private readonly HashSet<(MachineKind, long)> _seen = new();
+    private readonly List<(MachineKind, long)> _gone = new();
 
-        foreach (var row in rows)
+    public IReadOnlyList<DoneNote> See(IReadOnlyList<MachineRow> rows)
+    {
+        List<DoneNote>? notes = null;
+
+        for (var i = 0; i < rows.Count; i++)
         {
+            var row = rows[i];
             var key = (row.Kind, row.Id);
 
-            if (!seen.Add(key)) continue;
+            if (!_seen.Add(key)) continue;
 
-            if (_lastStates.TryGetValue(key, out var last) && Note(row, last) is { } what) notes.Add(new DoneNote(row, what));
+            if (_lastStates.TryGetValue(key, out var last) && Note(row, last) is { } what) (notes ??= new List<DoneNote>()).Add(new DoneNote(row, what));
 
             _lastStates[key] = row.State;
         }
 
         // A machine that was taken down, or sits on a floor not read this time, starts afresh when it is seen again.
-        foreach (var key in new List<(MachineKind, long)>(_lastStates.Keys))
+        foreach (var key in _lastStates.Keys)
         {
-            if (!seen.Contains(key)) _lastStates.Remove(key);
+            if (!_seen.Contains(key)) _gone.Add(key);
         }
 
-        return notes;
+        foreach (var key in _gone) _lastStates.Remove(key);
+
+        _gone.Clear();
+        _seen.Clear();
+
+        return notes ?? (IReadOnlyList<DoneNote>)Array.Empty<DoneNote>();
     }
 
     /// <summary>A new game or world: nothing seen before counts any more.</summary>

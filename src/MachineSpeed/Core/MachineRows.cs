@@ -101,7 +101,15 @@ public static class MachineKinds
     };
 
     /// <summary>The kind's name in page messages and toast keys.</summary>
-    public static string Key(MachineKind kind) => Keys.First(entry => entry.Kind == kind).Key;
+    public static string Key(MachineKind kind)
+    {
+        foreach (var entry in Keys)
+        {
+            if (entry.Kind == kind) return entry.Key;
+        }
+
+        throw new ArgumentOutOfRangeException(nameof(kind), kind, null);
+    }
 
     public static bool TryParse(string key, out MachineKind kind)
     {
@@ -134,7 +142,17 @@ public static class MachineList
     };
 
     /// <summary>How many rows are in a section: the HUD button shows the Working and Needs counts.</summary>
-    public static int Count(IEnumerable<MachineRow> rows, MachineGroup group) => rows.Count(row => Group(row) == group);
+    public static int Count(IReadOnlyList<MachineRow> rows, MachineGroup group)
+    {
+        var count = 0;
+
+        for (var i = 0; i < rows.Count; i++)
+        {
+            if (Group(rows[i]) == group) count++;
+        }
+
+        return count;
+    }
 
     /// <summary>
     /// Machines that need the player come first, then the running ones soonest done first, then paused ones, then idle

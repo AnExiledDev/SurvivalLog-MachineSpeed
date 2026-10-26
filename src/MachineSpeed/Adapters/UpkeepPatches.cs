@@ -49,7 +49,7 @@ internal static class BarrelCapacityPatch
             var limit = Amounts.Capacity(gameLimit, _capacity);
 
             __result = limit;
-            _first.Note(() => $"first barrel limit: game {gameLimit:0.##} bottles, now {limit:0.##}");
+            if (_first.IsPending) _first.Note($"first barrel limit: game {gameLimit:0.##} bottles, now {limit:0.##}");
         }
         catch (Exception ex)
         {
@@ -103,7 +103,7 @@ internal static class RobotChargingPatch
 
             __instance._chargeTripsPerHourCfg = rate;
             Robots[__instance.Pointer] = (__instance, _charging.Value);
-            _first.Note(() => $"first robot charging rate: game {gameRate:0.###}, now {rate:0.###}");
+            if (_first.IsPending) _first.Note($"first robot charging rate: game {gameRate:0.###}, now {rate:0.###}");
         }
         catch (Exception ex)
         {
@@ -146,6 +146,7 @@ internal static class FridgeStrengthPatch
     private static AmountHook? _hook;
     private static HookFailures _failures = HookFailures.Silent;
     private static FirstUse _first = FirstUse.Silent;
+    private static readonly StampedCache<int, long, Config_Furniture?> FridgesThisFrame = new();
     private static Config_Furniture? _changedRow;
     private static float _gameRate;
 
@@ -184,7 +185,7 @@ internal static class FridgeStrengthPatch
 
             (_changedRow, _gameRate) = (row, gameRate);
             row._ColdRate_k__BackingField = rate;
-            _first.Note(() => $"first fridge cold rate: game {gameRate:0.###}, now {rate:0.###}");
+            if (_first.IsPending) _first.Note($"first fridge cold rate: game {gameRate:0.###}, now {rate:0.###}");
         }
         catch (Exception ex)
         {
@@ -202,17 +203,31 @@ internal static class FridgeStrengthPatch
         row._ColdRate_k__BackingField = _gameRate;
     }
 
-    /// <summary>The table row of the powered fridge or freezer holding the item, or null when it is held by anything else.</summary>
+    /// <summary>
+    /// The table row of the powered fridge or freezer holding the item, or null when it is held by anything else. The
+    /// game works out many items' spoil rates in one frame, so each holder is looked up once in that frame.
+    /// </summary>
     private static Config_Furniture? FridgeRowOf(ItemData item)
     {
-        var holder = GameSingleton.Existing<BattleLogicWorld>()?._AgentManager?.GetAgent(item._OwnerId_k__BackingField);
+        var owner = item._OwnerId_k__BackingField;
 
-        if (holder == null || holder._InstanceIdType_k__BackingField != InstanceIdType.Furniture) return null;
+        FridgesThisFrame.Use(UnityEngine.Time.frameCount);
 
-        var row = GameSingleton.Existing<ConfigManager>()?.Get_Config_Furniture(holder._AgentConfigId_k__BackingField);
-        var isFridge = row != null && row._IsElectrical_k__BackingField && row._ElectricalType_k__BackingField == FridgeElectricalType;
+        if (FridgesThisFrame.TryGet(owner, out var known)) return known;
 
-        return isFridge ? row : null;
+        var holder = GameSingleton.Existing<BattleLogicWorld>()?._AgentManager?.GetAgent(owner);
+        Config_Furniture? fridge = null;
+
+        if (holder != null && holder._InstanceIdType_k__BackingField == InstanceIdType.Furniture)
+        {
+            var row = GameSingleton.Existing<ConfigManager>()?.Get_Config_Furniture(holder._AgentConfigId_k__BackingField);
+
+            if (row != null && row._IsElectrical_k__BackingField && row._ElectricalType_k__BackingField == FridgeElectricalType) fridge = row;
+        }
+
+        FridgesThisFrame.Set(owner, fridge);
+
+        return fridge;
     }
 
     private static void ScaleShown(ref float coldRate)
@@ -305,6 +320,7 @@ internal static class EquipmentWearPatch
     private const int DefenseSlot = 10;
 
     private static readonly RemainderCarry<long> Carry = new();
+    private static readonly StampedCache<int, long, bool> DevicesThisFrame = new();
 
     private static Multiplier _wear = Multiplier.GameAmount;
     private static AmountHook? _hook;
@@ -339,7 +355,7 @@ internal static class EquipmentWearPatch
             var loss = Carry.Take(device, gameLoss, _wear);
 
             damage = -loss;
-            _first.Note(() => $"first equipment wear: game {gameLoss}, now {loss}");
+            if (_first.IsPending) _first.Note($"first equipment wear: game {gameLoss}, now {loss}");
         }
         catch (Exception ex)
         {
@@ -347,12 +363,19 @@ internal static class EquipmentWearPatch
         }
     }
 
+    /// <summary>A wave can wear many pieces many times in one frame, so each piece is looked up once in that frame.</summary>
     private static bool IsDefenseDevice(long furnitureId)
     {
+        DevicesThisFrame.Use(UnityEngine.Time.frameCount);
+
+        if (DevicesThisFrame.TryGet(furnitureId, out var known)) return known;
+
         var furniture = GameSingleton.Existing<BattleLogicWorld>()?._AgentManager?.GetAgent(furnitureId);
+        var isDevice = furniture != null && furniture._InstanceIdType_k__BackingField == InstanceIdType.Furniture &&
+                       GameSingleton.Existing<ConfigManager>()?.Get_Config_Furniture(furniture._AgentConfigId_k__BackingField)?.SlotType == DefenseSlot;
 
-        if (furniture == null || furniture._InstanceIdType_k__BackingField != InstanceIdType.Furniture) return false;
+        DevicesThisFrame.Set(furnitureId, isDevice);
 
-        return GameSingleton.Existing<ConfigManager>()?.Get_Config_Furniture(furniture._AgentConfigId_k__BackingField)?.SlotType == DefenseSlot;
+        return isDevice;
     }
 }

@@ -30,13 +30,18 @@ internal static class PlantCaches
         {
             var furniture = furnitures[i];
 
-            if (furniture == null || furniture.IsDead) continue;
+            // Only pots are asked about, and a pot already looked at for this speed is not asked again.
+            if (furniture == null || furniture._IsDead_k__BackingField || (FurnitureParts.Of(furniture) & MachineParts.Plant) == 0) continue;
+
+            var id = furniture._InstanceId_k__BackingField;
+
+            if (IsChecked(id, speed)) continue;
 
             var plant = AgentTools.GetAgentComponent<PlantComponent>(furniture);
 
-            if (plant == null || plant.State != PlantState.Growing || IsChecked(furniture.InstanceId, speed)) continue;
+            if (plant == null || plant.State != PlantState.Growing) continue;
 
-            CheckedAtSpeed[furniture.InstanceId] = speed.Value;
+            CheckedAtSpeed[id] = speed.Value;
             Resync(plant, configs);
         }
     }
@@ -64,6 +69,6 @@ internal static class PlantCaches
         plant._cachedActualGrowthTime = target;
         plant.NotifyHeadBarRestore();
         plant.NotifyHudPlantAddOrUpdate();
-        _first.Note(() => $"first plant put on the current growth time: {kept:0} -> {target:0}");
+        if (_first.IsPending) _first.Note($"first plant put on the current growth time: {kept:0} -> {target:0}");
     }
 }

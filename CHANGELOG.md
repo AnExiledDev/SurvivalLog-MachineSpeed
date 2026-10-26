@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.4
+
+- Fixed: a home with many machines had a short stutter every few seconds. The Machines button now checks your machines a few at a time instead of all at once.
+- Fixed: the game could hitch once every game hour in a home with a lot of furniture.
+- The brewing barrel, dye vat and shredder windows show their times with less work behind the scenes, so the game runs smoother while one is open.
+- The Machines window and its button update only what changed, so the game runs smoother while the window is open.
+- Made for Survival Log 1.1.19611.
+
 ## 0.5.3
 
 - Idle machines (nothing loaded, a drone at home) are no longer listed under Needs you. They have their own Idle section at the bottom of the Machines window and are not counted.

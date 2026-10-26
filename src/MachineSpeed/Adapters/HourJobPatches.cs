@@ -13,6 +13,9 @@ namespace MachineSpeed.Adapters;
 internal static class BrewingPatch
 {
     private static Speed _speed = Speed.GamePace;
+
+    // One for every brew, read at each step so a change of the setting reaches brews already running.
+    private static readonly Func<Speed> SpeedNow = () => _speed;
     private static MachineHook? _hook;
     private static HookFailures _failures = HookFailures.Silent;
 
@@ -45,11 +48,17 @@ internal static class BrewingPatch
         if (__result) Checked(__instance);
     }
 
+    /// <summary>
+    /// The game's hourly check runs this for every piece of furniture there is, so anything that is not a barrel, or a
+    /// barrel whose brew is already being moved along, is passed over before the game is asked anything about it.
+    /// </summary>
     private static void Checked(Furniture __instance)
     {
         try
         {
-            BrewJob.TrackIfBrewing(__instance, () => _speed);
+            if (__instance == null || !HourJobLook.ShouldLook(FurnitureParts.Of(__instance), MachineParts.Brewing, HourJobs.IsTracked("brew", __instance._InstanceId_k__BackingField))) return;
+
+            BrewJob.TrackIfBrewing(__instance, SpeedNow);
         }
         catch (Exception ex)
         {
@@ -91,7 +100,7 @@ internal static class BrewingPatch
             if (brew == null || !brew.IsBrewing()) return;
 
             var nowHour = Furniture.GetBrewNowHour();
-            var done = Countdown.Done(nowHour - brew.StartHour, Furniture.GetDyeNowSeconds(), nowHour, HourJobs.Carry("brew", __instance.InstanceId));
+            var done = Countdown.Done(nowHour - brew.StartHour, Furniture.GetDyeNowSeconds(), nowHour, HourJobs.Carry("brew", __instance._InstanceId_k__BackingField));
 
             GameHeadBar.Show(__instance, HeadBar.Job(brew.TotalHours, done, _speed), Furniture.GetBrewProductName(brew.ResultItemId));
         }
@@ -109,6 +118,9 @@ internal static class BrewingPatch
 internal static class DyeVatPatch
 {
     private static Speed _speed = Speed.GamePace;
+
+    // One for every dye job, read at each step so a change of the setting reaches jobs already running.
+    private static readonly Func<Speed> SpeedNow = () => _speed;
     private static MachineHook? _hook;
     private static HookFailures _failures = HookFailures.Silent;
 
@@ -141,11 +153,17 @@ internal static class DyeVatPatch
         if (__result) Checked(__instance);
     }
 
+    /// <summary>
+    /// The game's hourly check runs this for every piece of furniture there is, so anything that is not a vat, or a vat
+    /// whose job is already being moved along, is passed over before the game is asked anything about it.
+    /// </summary>
     private static void Checked(Furniture __instance)
     {
         try
         {
-            DyeJob.TrackIfRunning(__instance, () => _speed);
+            if (__instance == null || !HourJobLook.ShouldLook(FurnitureParts.Of(__instance), MachineParts.DyeVat, HourJobs.IsTracked("dye", __instance._InstanceId_k__BackingField))) return;
+
+            DyeJob.TrackIfRunning(__instance, SpeedNow);
         }
         catch (Exception ex)
         {
@@ -189,7 +207,7 @@ internal static class DyeVatPatch
             if (dye == null || !dye.IsRunning()) return;
 
             var nowHour = Furniture.GetDyeNowHour();
-            var done = Countdown.Done(nowHour - dye.StartHour, Furniture.GetDyeNowSeconds(), nowHour, HourJobs.Carry("dye", __instance.InstanceId));
+            var done = Countdown.Done(nowHour - dye.StartHour, Furniture.GetDyeNowSeconds(), nowHour, HourJobs.Carry("dye", __instance._InstanceId_k__BackingField));
 
             GameHeadBar.Show(__instance, HeadBar.Bucket(dye.HoursPerBucket, dye.ResultCount, done, _speed), Furniture.GetDyeProductName(dye.ResultItemId));
         }

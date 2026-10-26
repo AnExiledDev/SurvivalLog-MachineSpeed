@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
 using MachineSpeed.Core;
@@ -28,22 +27,28 @@ internal static class HourJobs
     private const float PlantScanSeconds = 5f;
 
     private static readonly Dictionary<(string Kind, long Id), IHourJob> Jobs = new();
+
+    // Kept and emptied after each step, so stepping the jobs makes no new list four times a second.
+    private static readonly List<KeyValuePair<(string Kind, long Id), IHourJob>> Stepping = new();
     private static HookFailures _failures = HookFailures.Silent;
     private static Speed _compost = Speed.GamePace;
+    private static readonly Func<Speed> CompostSpeed = () => _compost;
     private static IntPtr _world;
     private static float _nextTick;
-    private static float _nextBinScan;
-    private static float _nextPlantScan;
+
+    // The bin and pot scans start apart, so the two never land on the same frame.
+    private static float _nextBinScan = 1.25f;
+    private static float _nextPlantScan = 3.75f;
 
     public static void UseLog(SpeedLog log) => _failures = new HookFailures(log.Write, "moving a brew, dye job or compost bin along");
 
     /// <summary>Bins already found move on at the new speed from the next tick. Set on the main thread, where the ticker runs.</summary>
     public static void UseCompost(Speed compost) => _compost = compost;
 
-    public static void Track(string kind, long id, Func<IHourJob> start)
-    {
-        if (!Jobs.ContainsKey((kind, id))) Jobs[(kind, id)] = start();
-    }
+    public static bool IsTracked(string kind, long id) => Jobs.ContainsKey((kind, id));
+
+    /// <summary>Starts moving a job along; one already moving is kept as it is.</summary>
+    public static void Add(string kind, long id, IHourJob job) => Jobs.TryAdd((kind, id), job);
 
     /// <summary>The time a job is carrying toward its next hour; 0 for a job not being moved along.</summary>
     public static double Carry(string kind, long id) => Jobs.TryGetValue((kind, id), out var job) ? job.CarrySeconds : 0;
@@ -65,7 +70,7 @@ internal static class HourJobs
             if (!_compost.IsGamePace && realSeconds >= _nextBinScan)
             {
                 _nextBinScan = realSeconds + BinScanSeconds;
-                CompostJob.FindBins(world, () => _compost);
+                CompostJob.FindBins(world, CompostSpeed);
             }
 
             if (PlantGrowthPatch.IsIn && realSeconds >= _nextPlantScan)
@@ -90,6 +95,7 @@ internal static class HourJobs
         if (pointer == _world) return true;
 
         Jobs.Clear();
+        FurnitureParts.Forget();
         PlantCaches.Forget();
         TimerPage.Forget();
         CookingPatch.Forget();
@@ -101,21 +107,30 @@ internal static class HourJobs
     /// <summary>A job that fails is dropped, so it cannot fail every tick; it is picked up again at the game's next hour.</summary>
     private static void StepAll(int nowSeconds)
     {
-        foreach (var (key, job) in Jobs.ToList())
+        Stepping.AddRange(Jobs);
+
+        try
         {
-            bool isRunning;
-
-            try
+            foreach (var (key, job) in Stepping)
             {
-                isRunning = job.Step(nowSeconds);
-            }
-            catch (Exception ex)
-            {
-                isRunning = false;
-                _failures.Report(ex);
-            }
+                bool isRunning;
 
-            if (!isRunning) Jobs.Remove(key);
+                try
+                {
+                    isRunning = job.Step(nowSeconds);
+                }
+                catch (Exception ex)
+                {
+                    isRunning = false;
+                    _failures.Report(ex);
+                }
+
+                if (!isRunning) Jobs.Remove(key);
+            }
+        }
+        finally
+        {
+            Stepping.Clear();
         }
     }
 }
@@ -157,14 +172,20 @@ internal sealed class BrewJob : IHourJob
     /// <summary>The speed is read at every step, so a brew already running follows a change of the setting.</summary>
     public static void TrackIfBrewing(Furniture? furniture, Func<Speed> speed)
     {
-        var brew = furniture == null ? null : AgentTools.GetAgentComponent<BrewComponent>(furniture);
+        if (furniture == null) return;
 
-        if (furniture != null && brew != null && brew.IsBrewing()) HourJobs.Track("brew", furniture.InstanceId, () => new BrewJob(furniture, brew, speed));
+        var id = furniture._InstanceId_k__BackingField;
+
+        if (HourJobs.IsTracked("brew", id)) return;
+
+        var brew = AgentTools.GetAgentComponent<BrewComponent>(furniture);
+
+        if (brew != null && brew.IsBrewing()) HourJobs.Add("brew", id, new BrewJob(furniture, brew, speed));
     }
 
     public bool Step(int nowSeconds)
     {
-        if (_furniture.IsDead || !_brew.IsBrewing()) return false;
+        if (_furniture._IsDead_k__BackingField || !_brew.IsBrewing()) return false;
 
         var nowHour = Furniture.GetBrewNowHour();
         var elapsed = nowHour - _brew.StartHour;
@@ -173,7 +194,7 @@ internal sealed class BrewJob : IHourJob
         if (moved == elapsed) return true;
 
         _brew.StartHour = nowHour - moved;
-        _first.Note(() => $"first brew moved along: {elapsed}h of {_brew.TotalHours}h done, now {moved}h");
+        if (_first.IsPending) _first.Note($"first brew moved along: {elapsed}h of {_brew.TotalHours}h done, now {moved}h");
         _furniture.TryFinishBrew();
 
         return _brew.IsBrewing();
@@ -207,14 +228,20 @@ internal sealed class DyeJob : IHourJob
     /// <summary>The speed is read at every step, so a dye job already running follows a change of the setting.</summary>
     public static void TrackIfRunning(Furniture? furniture, Func<Speed> speed)
     {
-        var dye = furniture == null ? null : AgentTools.GetAgentComponent<DyeComponent>(furniture);
+        if (furniture == null) return;
 
-        if (furniture != null && dye != null && dye.IsRunning()) HourJobs.Track("dye", furniture.InstanceId, () => new DyeJob(furniture, dye, speed));
+        var id = furniture._InstanceId_k__BackingField;
+
+        if (HourJobs.IsTracked("dye", id)) return;
+
+        var dye = AgentTools.GetAgentComponent<DyeComponent>(furniture);
+
+        if (dye != null && dye.IsRunning()) HourJobs.Add("dye", id, new DyeJob(furniture, dye, speed));
     }
 
     public bool Step(int nowSeconds)
     {
-        if (_furniture.IsDead || !_dye.IsRunning()) return false;
+        if (_furniture._IsDead_k__BackingField || !_dye.IsRunning()) return false;
 
         var nowHour = Furniture.GetDyeNowHour();
         var total = _dye.ResultCount * _dye.HoursPerBucket;
@@ -224,7 +251,7 @@ internal sealed class DyeJob : IHourJob
         if (moved == elapsed) return true;
 
         _dye.StartHour = nowHour - moved;
-        _first.Note(() => $"first dye job moved along: {elapsed}h of {total}h done, now {moved}h");
+        if (_first.IsPending) _first.Note($"first dye job moved along: {elapsed}h of {total}h done, now {moved}h");
         _furniture.TryFinishDye();
 
         return _dye.IsRunning();
@@ -238,6 +265,7 @@ internal sealed class DyeJob : IHourJob
 /// </summary>
 internal sealed class CompostJob : IHourJob
 {
+    private static readonly List<ItemData> InBin = new();
     private static FirstUse _first = FirstUse.Silent;
 
     private readonly Furniture _bin;
@@ -254,6 +282,7 @@ internal sealed class CompostJob : IHourJob
 
     public static void UseLog(SpeedLog log) => _first = new FirstUse(log.WriteFileOnly);
 
+    /// <summary>Whether a piece is a bin is known once per kind of furniture, so the scan asks the game nothing of other pieces.</summary>
     public static void FindBins(BattleLogicWorld world, Func<Speed> speed)
     {
         var furnitures = world._AgentManager?.GetAllFurnitures();
@@ -262,16 +291,17 @@ internal sealed class CompostJob : IHourJob
         {
             var furniture = furnitures[i];
 
-            if (furniture != null && !furniture.IsDead && CompostConfig.IsCompostBin(furniture.AgentConfigId))
-            {
-                HourJobs.Track("compost", furniture.InstanceId, () => new CompostJob(furniture, speed));
-            }
+            if (furniture == null || furniture._IsDead_k__BackingField || (FurnitureParts.Of(furniture) & MachineParts.CompostBin) == 0) continue;
+
+            var id = furniture._InstanceId_k__BackingField;
+
+            if (!HourJobs.IsTracked("compost", id)) HourJobs.Add("compost", id, new CompostJob(furniture, speed));
         }
     }
 
     public bool Step(int nowSeconds)
     {
-        if (_bin.IsDead) return false;
+        if (_bin._IsDead_k__BackingField) return false;
 
         var hours = _clock.ExtraHours(nowSeconds, _speed());
 
@@ -285,34 +315,45 @@ internal sealed class CompostJob : IHourJob
         var nowHour = Furniture.GetDyeNowHour();
         var moved = 0;
 
-        foreach (var item in ItemsIn(items, _bin.InstanceId))
+        ItemsIn(items, _bin._InstanceId_k__BackingField);
+
+        try
         {
-            var config = configs.Get_Config_Item(item.ItemConfigId);
+            foreach (var item in InBin)
+            {
+                var config = configs.Get_Config_Item(item.ItemConfigId);
 
-            if (config == null || config.IT_Rot_Threshold <= 0f || config.Life <= 0 || item.OriginalTimeLeft <= 0) continue;
+                if (config == null || config.IT_Rot_Threshold <= 0f || config.Life <= 0 || item.OriginalTimeLeft <= 0) continue;
 
-            item.StartTime -= hours;
-            moved++;
+                item.StartTime -= hours;
+                moved++;
 
-            if (hours > 0) items.CheckAndProcessRot(item, config, nowHour, false);
+                if (hours > 0) items.CheckAndProcessRot(item, config, nowHour, false);
+            }
+        }
+        finally
+        {
+            InBin.Clear();
         }
 
-        if (moved > 0) _first.Note(() => $"first compost bin moved along: {moved} item(s) {hours}h on");
+        if (moved > 0 && _first.IsPending) _first.Note($"first compost bin moved along: {moved} item(s) {hours}h on");
 
         return true;
     }
 
-    /// <summary>A copy, because an item that rots is taken out of the bin's list while the rest are still being moved.</summary>
-    private static List<ItemData> ItemsIn(ItemManager items, long ownerId)
+    /// <summary>
+    /// A copy, because an item that rots is taken out of the bin's list while the rest are still being moved. One list
+    /// serves every bin, emptied after each.
+    /// </summary>
+    private static void ItemsIn(ItemManager items, long ownerId)
     {
         var inBin = items.GetItemDataList(ownerId);
-        var copy = new List<ItemData>();
+
+        InBin.Clear();
 
         for (var i = 0; inBin != null && i < inBin.Count; i++)
         {
-            if (inBin[i] is { } item) copy.Add(item);
+            if (inBin[i] is { } item) InBin.Add(item);
         }
-
-        return copy;
     }
 }

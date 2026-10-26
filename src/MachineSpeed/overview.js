@@ -21,10 +21,14 @@
   var state = { data: emptyData(), isOpen: false, isLive: false, title: 'Machines', tip: '', working: 0, needs: 0 };
   var ui = null;
   var shownKeys = '';
+  var rowNodes = [];
   var toastTimer = 0;
   var isBusy = false;
   var busyTimer = 0;
-  var hudVersion = 0;
+  // The HUD button as placed: its iframe, document, column and the parts that change, so a check or a new count
+  // touches only those.
+  var hud = null;
+  var isHudCleared = false;
   var hasReportedPageAccess = false;
   var hasReportedHudPlaced = false;
 
@@ -143,7 +147,7 @@
   ].join('\n');
 
   function build() {
-    if (ui && document.body.contains(ui.root)) return;
+    if (ui && ui.root.isConnected) return;
 
     addStyle();
     shownKeys = '';
@@ -234,7 +238,7 @@
     renderSub(data.atHome || '', data.needYou || '');
     setText(ui.points, data.points || '');
     setText(ui.pointsLabel, data.pointsLabel || '');
-    ui.have.style.display = data.points ? '' : 'none';
+    setShown(ui.have, !!data.points);
     setText(ui.toClose, data.toClose || '');
     renderList(data);
   }
@@ -260,16 +264,15 @@
     var rows = data.rows || [];
     var keys = rows.map(function (r) { return r.group + ':' + r.key; }).join(',') + '|' + (data.needsTitle || '') + '|' + (data.workingTitle || '') + '|' + (data.idleTitle || '');
 
-    if (rows.length > 0 && keys === shownKeys) {
-      var nodes = ui.list.querySelectorAll('.mso-row');
-
-      for (var i = 0; i < rows.length; i++) updateRow(nodes[i], rows[i]);
+    if (rows.length > 0 && keys === shownKeys && rowNodes.length === rows.length) {
+      for (var i = 0; i < rows.length; i++) updateRow(rowNodes[i], rows[i]);
 
       return;
     }
 
     var scroll = ui.list.scrollTop;
     shownKeys = keys;
+    rowNodes = [];
     ui.list.textContent = '';
 
     if (rows.length === 0) {
@@ -296,7 +299,13 @@
     var head = el('div', 'mso-sect', title || '');
     var list = el('div', 'mso-rows');
     head.appendChild(el('span', '', String(rows.length)));
-    rows.forEach(function (r) { list.appendChild(newRow(r)); });
+    // Kept in the order the rows come, which is the order the sections are added in, so an update finds each row by index.
+    rows.forEach(function (r) {
+      var node = newRow(r);
+
+      rowNodes.push(node);
+      list.appendChild(node);
+    });
     parent.appendChild(head);
     parent.appendChild(list);
   }
@@ -326,14 +335,21 @@
     var what = node.children[1];
     var bar = what.children[2];
     var hasBar = typeof r.progress === 'number';
-    node.className = 'mso-row mso-' + r.state;
+    var className = 'mso-row mso-' + r.state;
+
+    // Written only when different, so an unchanged row costs the page no style work.
+    if (node.className !== className) node.className = className;
     updateIcon(node.children[0], r.icon || '');
     setText(what.children[0], r.name);
     setText(what.children[1], r.product);
-    what.children[1].style.display = r.product ? '' : 'none';
-    bar.style.display = hasBar ? '' : 'none';
+    setShown(what.children[1], !!r.product);
+    setShown(bar, hasBar);
 
-    if (hasBar) bar.firstChild.style.width = Math.round(Math.max(0, Math.min(1, r.progress)) * 100) + '%';
+    if (hasBar) {
+      var width = Math.round(Math.max(0, Math.min(1, r.progress)) * 100) + '%';
+
+      if (bar.firstChild.style.width !== width) bar.firstChild.style.width = width;
+    }
 
     setText(node.children[2].children[1], r.stateText);
     updateTime(node.children[3], r);
@@ -432,8 +448,17 @@
     if (!rush.ok && rush.why) cell.appendChild(el('div', 'mso-why', rush.why));
   }
 
+  // A missing text is the empty string the page would show for it, so it is not written again every second.
   function setText(node, text) {
-    if (node.textContent !== text) node.textContent = text;
+    var shown = text === null || text === undefined ? '' : String(text);
+
+    if (node.textContent !== shown) node.textContent = shown;
+  }
+
+  function setShown(node, isShown) {
+    var display = isShown ? '' : 'none';
+
+    if (node.style.display !== display) node.style.display = display;
   }
 
   // The survival points mark: a small gold diamond.
@@ -500,15 +525,29 @@
     state.isLive = !!isLive;
     state.title = title || 'Machines';
     state.tip = tip || '';
-    hudVersion++;
+    isHudCleared = false;
+
+    if (state.isLive && isHudIntact()) {
+      updateHudTip();
+
+      return;
+    }
+
     patchPagesSafely();
   }
 
-  // The HUD button's counts: machines working (bottom corner) and machines that need the player (top corner).
+  // The HUD button's counts: machines working (bottom corner) and machines that need the player (top corner). A button
+  // already in place has only its counts changed, so the HUD does not see a new button and look for buttons again.
   function badge(working, needs) {
     state.working = Math.max(0, working | 0);
     state.needs = Math.max(0, needs | 0);
-    hudVersion++;
+
+    if (state.isLive && isHudIntact()) {
+      updateHudCounts();
+
+      return;
+    }
+
     patchPagesSafely();
   }
 
@@ -522,8 +561,13 @@
   ].join('\n');
 
   // The HUD is a same-origin iframe, so its document can be reached from here; polled because the game creates and
-  // drops that iframe whenever it likes.
+  // drops that iframe whenever it likes. A button still in place in the same document is the usual case and returns
+  // without looking anything up.
   function patchPages() {
+    if (state.isLive ? isHudIntact() : isHudCleared) return;
+
+    hud = null;
+
     var frames = document.querySelectorAll('iframe');
 
     for (var i = 0; i < frames.length; i++) {
@@ -543,7 +587,18 @@
         continue;
       }
 
-      placeHudButton(doc);
+      placeHudButton(frames[i], doc);
+    }
+
+    // With no game loaded the button is only ever taken out, so one whole sweep is enough until the next live().
+    isHudCleared = !state.isLive;
+  }
+
+  function isHudIntact() {
+    try {
+      return hud !== null && hud.frame.isConnected && hud.frame.contentDocument === hud.doc && hud.column.isConnected && hud.node.parentNode === hud.column;
+    } catch (e) {
+      return false;
     }
   }
 
@@ -555,23 +610,22 @@
 
   // First in the tool column: the column is anchored at the bottom, so the first child sits on top and the game's own
   // buttons do not move. The column hides itself in build mode, and the button with it.
-  function placeHudButton(doc) {
+  // Any button already there (from an earlier copy of this script, or left in the wrong place) is taken out first, so
+  // there is never more than one.
+  function placeHudButton(frame, doc) {
     var column = doc.querySelector('.vertical-tools');
-    var existing = doc.querySelector('.' + HUD_CLASS);
+    var strays = doc.querySelectorAll('.' + HUD_CLASS);
 
-    if (!column || !state.isLive) {
-      if (existing) existing.remove();
+    for (var i = 0; i < strays.length; i++) strays[i].remove();
 
-      return;
-    }
-
-    if (existing && existing.parentNode === column && existing.getAttribute('data-version') === String(hudVersion)) return;
-    if (existing) existing.remove();
+    if (!column || !state.isLive) return;
 
     addHudStyle(doc);
     var node = hudButton(doc);
 
     node.setAttribute('data-etk-dock', DOCK_ORDER);
+    hud = { frame: frame, doc: doc, column: column, node: node, tip: node.lastChild, needs: null, working: null };
+    updateHudCounts();
     column.insertBefore(node, column.firstChild);
 
     if (!hasReportedHudPlaced) send('diag|HUD button placed in the tool column');
@@ -593,12 +647,7 @@
     var node = doc.createElement('button');
     node.className = 'ui-btn icon-sq interactive-btn has-entry-tip ' + HUD_CLASS;
     node.setAttribute('data-interactive', '');
-    node.setAttribute('data-version', String(hudVersion));
     node.appendChild(gear(doc));
-
-    addCount(doc, node, 'mso-hud-needs', state.needs);
-    addCount(doc, node, 'mso-hud-working', state.working);
-
     node.appendChild(entryTip(doc));
     node.addEventListener('click', function (e) {
       e.stopPropagation();
@@ -608,13 +657,41 @@
     return node;
   }
 
-  function addCount(doc, node, className, count) {
-    if (count <= 0) return;
+  // Counts sit between the gear and the tip, needs first. A count of 0 has no badge.
+  function updateHudCounts() {
+    hud.needs = setCount(hud.needs, 'mso-hud-needs', state.needs, hud.working || hud.tip);
+    hud.working = setCount(hud.working, 'mso-hud-working', state.working, hud.tip);
+  }
 
-    var badge = doc.createElement('span');
-    badge.className = 'mso-hud-badge ' + className;
-    badge.textContent = count > 99 ? '99+' : String(count);
-    node.appendChild(badge);
+  function setCount(badge, className, count, before) {
+    if (count <= 0) {
+      if (badge) badge.remove();
+
+      return null;
+    }
+
+    var text = count > 99 ? '99+' : String(count);
+
+    if (!badge) {
+      badge = hud.doc.createElement('span');
+      badge.className = 'mso-hud-badge ' + className;
+      badge.appendChild(hud.doc.createTextNode(text));
+      hud.node.insertBefore(badge, before);
+
+      return badge;
+    }
+
+    if (badge.firstChild.nodeValue !== text) badge.firstChild.nodeValue = text;
+
+    return badge;
+  }
+
+  function updateHudTip() {
+    var title = hud.tip.children[0];
+    var body = hud.tip.children[1];
+
+    if (title.textContent !== state.title) title.textContent = state.title;
+    if (body.textContent !== state.tip) body.textContent = state.tip;
   }
 
   function gear(doc) {

@@ -20,6 +20,9 @@ public abstract record OverviewCommand
 
     public sealed record NoScript : OverviewCommand;
 
+    /// <summary>The machine panels' timer script (page.js) is missing from the web UI, so it must be sent again.</summary>
+    public sealed record TimerNoScript : OverviewCommand;
+
     /// <summary>A diagnostic line from the page script, for the log.</summary>
     public sealed record Note(string Text) : OverviewCommand;
 
@@ -43,6 +46,7 @@ public abstract record OverviewCommand
             ("close", 1) => new Close(),
             ("ready", 1) => new Ready(),
             ("noscript", 1) => new NoScript(),
+            ("timernoscript", 1) => new TimerNoScript(),
             ("rush", 3) when MachineKinds.TryParse(parts[1], out var kind) && long.TryParse(parts[2], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var id)
                 => new Rush(kind, id),
             _ => null,
