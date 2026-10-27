@@ -23,6 +23,7 @@ Machine Speed lets you choose how fast each machine at your base works. 2 means 
 [*][b]Amounts[/b]: more output from the shredder, Ration Press, brewing, compost bins and harvests; bigger brews; faster robot charging; stronger fridges and freezers; more power per unit of generator fuel; and less wear on defense devices.[/*]
 [*][b]Machines window[/b]: a Machines button in the tool column lists every machine at home with its picture, what it is making, the time left and when it finishes. Machines that need you are listed first with what to do, then working ones with a progress bar, then idle ones. The button shows how many machines are working and how many need you. Esc closes the window.[/*]
 [*][b]Rush[/b]: a Rush button in the Machines window finishes a running job now for survival points, 0.25 per game hour left by default, at least 1. Compost bins, plants, generators and paused jobs cannot be rushed.[/*]
+[*][b]UI size[/b]: with Exiled's Toolkit 0.10.0 or newer, its UI size setting draws the Machines window bigger or smaller, as far as it still fits on the screen.[/*]
 [*][b]Done notices[/b]: with Exiled's Toolkit, a notice pops up when a machine finishes, a drone comes back or a generator runs out of fuel. Click it to open the Machines window.[/*]
 [*][b]Finish clock[/b]: [font=Courier New]FinishClock[/font] shows the game time a job finishes instead of the time left.[/*]
 [*][b]Takes your old settings[/b]: brewing and cooking used to be in Action Speed. The first time Machine Speed starts, it reads your [font=Courier New]Brewing[/font] and [font=Courier New]Cooking[/font] values from Action Speed's config and uses them.[/*]
@@ -54,7 +55,7 @@ Works in English and Chinese.
 [list]
 [*]Survival Log 1.1.19611. A game update can break it until the mod is updated.[/*]
 [*][url=https://www.nexusmods.com/survivallog/mods/12]BepInEx for Survival Log[/url] (BepInEx 6.0.0-be.788, IL2CPP). Install it first.[/*]
-[*]Optional: [url=https://www.nexusmods.com/survivallog/mods/61]Exiled's Toolkit[/url] 0.4.0 or newer. With it, settings changed on the Mod Manager's Mods screen take effect without restarting the game. Without it, they take effect at the next game start. It also shows the done notices.[/*]
+[*]Optional: [url=https://www.nexusmods.com/survivallog/mods/61]Exiled's Toolkit[/url] 0.4.0 or newer. With it, settings changed on the Mod Manager's Mods screen take effect without restarting the game. With 0.10.0 or newer, its UI size setting also sizes the Machines window. Without it, settings take effect at the next game start. It also shows the done notices.[/*]
 [*]Optional: Day Length, for [font=Courier New]FollowDayLength[/font].[/*]
 [/list]
 
@@ -102,6 +103,7 @@ Machine Speed 让你设置基地里每台机器的工作速度。2 表示一项�
 [*][b]产量[/b]：粉碎机、口粮压制机、酿酒、堆肥箱和收获的产出更多；一次酿得更多；机器人充电更快；冰箱和冰柜保鲜更强；燃油发电机每份燃料发电更多；防御装置损耗更少。[/*]
 [*][b]机器总览窗口[/b]：工具栏中的「机器总览」按钮列出基地里的所有机器，显示机器图标、正在制作什么、剩余时间和完成时间。需要你处理的机器排在最前面，并写明该做什么；其次是显示进度条的进行中机器，闲置的机器排在最后。按钮上的两个数字分别表示进行中的机器数量和需要你处理的机器数量。按 Esc 关闭窗口。[/*]
 [*][b]加速完成[/b]：「机器总览」窗口中的「加速完成」按钮花费生存点立即完成正在进行的工作，默认每剩余一个游戏小时 0.25 点，至少 1 点。堆肥箱、植物、发电机和已暂停的工作不能加速完成。[/*]
+[*][b]界面大小[/b]：安装 Exiled's Toolkit 0.10.0 或更新版本后，可以用它的界面大小设置放大或缩小「机器总览」窗口，最大放到窗口仍能完整显示在屏幕上为止。[/*]
 [*][b]完成通知[/b]：装了 Exiled's Toolkit 时，机器完成、无人机返回或发电机燃料耗尽会弹出通知，点击通知打开「机器总览」窗口。[/*]
 [*][b]完成时间[/b]：[font=Courier New]FinishClock[/font] 显示工作完成时的游戏时间，而不是剩余时间。[/*]
 [*][b]沿用你原来的设置[/b]：酿酒和烹饪以前在 Action Speed 里。Machine Speed 第一次启动时，会读取你在 Action Speed 配置中的 [font=Courier New]Brewing[/font] 和 [font=Courier New]Cooking[/font] 数值并沿用。[/*]
@@ -132,7 +134,7 @@ Machine Speed 不会往存档里写入自己的数据，也不会修改游戏文
 [list]
 [*]Survival Log 1.1.19611。游戏更新后模组可能暂时失效，直到模组更新为止。[/*]
 [*][url=https://www.nexusmods.com/survivallog/mods/12]BepInEx for Survival Log[/url]（BepInEx 6.0.0-be.788，IL2CPP），请先安装。[/*]
-[*]可选：[url=https://www.nexusmods.com/survivallog/mods/61]Exiled's Toolkit[/url] 0.4.0 或更新版本。装了它，在 Mod Manager 的「模组」界面改动的设置无需重启游戏即可生效；没装的话，改动在下次启动游戏时生效。它也负责显示完成通知。[/*]
+[*]可选：[url=https://www.nexusmods.com/survivallog/mods/61]Exiled's Toolkit[/url] 0.4.0 或更新版本。装了它，在 Mod Manager 的「模组」界面改动的设置无需重启游戏即可生效，0.10.0 或更新版本还能用它的界面大小设置调整「机器总览」窗口的大小；没装的话，改动在下次启动游戏时生效。它也负责显示完成通知。[/*]
 [*]可选：「昼夜时长」（Day Length），用于 [font=Courier New]FollowDayLength[/font]。[/*]
 [/list]
 

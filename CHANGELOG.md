@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.5
+
+- The Machines window and its pop-up messages can be drawn bigger or smaller with the UI size setting of Exiled's Toolkit 0.10.0 or newer. A change shows at once, and the window only grows as far as it still fits on the screen.
+- The Machines button keeps the game's size, like the game's own buttons around it.
+- Made for Survival Log 1.1.19611.
+
 ## 0.5.4
 
 - Fixed: a home with many machines had a short stutter every few seconds. The Machines button now checks your machines a few at a time instead of all at once.
