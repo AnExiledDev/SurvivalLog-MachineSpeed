@@ -2,6 +2,8 @@ Name: Machine Speed
 Summary: Choose how fast each machine at your base works and how much it makes: shredder, Ration Press, dye vat, compost, plants, generators, drones, brewing and cooking. A Machines window lists every job and time left, with done notices, a finish clock, speed presets and a Rush button to finish a job now for survival points. At 1, a machine is left alone.
 
 Description (BBCode):
+[center][img]https://sldb.core-directive.com/media/save/2-changes-stay.png[/img][/center]
+
 Machine Speed lets you choose how fast each machine at your base works. 2 means a job takes half the game time, 0.5 means twice as long. Speeds go up to 100000, so a job can be close to instant: the shortest job is 1 game second. Every speed defaults to 1, and at 1 the mod does not touch that machine at all, so you only change what you set.
 
 [size=5]Main features[/size]
