@@ -21,6 +21,7 @@ public class OverviewUiSizeTests
 
         // Opening again reuses the window it built, so the Toolkit is not handed it twice.
         Assert.Equal("2", page.Text("handed.length"));
+        Assert.Equal("2", page.Text("handed.filter(function (h) { return h.options.mod === 'MachineSpeed'; }).length"));
         Assert.Equal("mso-root", page.Text("handed[0].el.id"));
         // The mask always fills the screen; the window on it is what must fit.
         Assert.True(page.Is("handed[0].options.fit === document.querySelector('.mso-plate')"));

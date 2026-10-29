@@ -52,3 +52,9 @@ The Machines button in the tool column opens a window with every machine at home
 | `Toasts` | `true` | Shows a notice when a machine finishes, a drone comes back or a fuel generator runs out of fuel. Clicking it opens the Machines window. Needs Exiled's Toolkit. |
 | `RushPointsPerHour` | `0.25` | Survival points the Rush button costs for each game hour a job has left, rounded up, at least 1. From 0.01 to 1000; 0 or less counts as 0.25. |
 | `FinishClock` | `false` | Shows the game time a job will be done instead of the time left, in the Machines window and the timers over plants, brewing barrels and dye vats. |
+
+## Interface
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `UiScale` | `0` | How big Machine Speed's own windows, panels and messages are drawn, in percent, from 75 to 200. At `0` they follow the UI size set in Exiled's Toolkit (its `UiScale`). Needs Exiled's Toolkit 0.11.0 or newer. |

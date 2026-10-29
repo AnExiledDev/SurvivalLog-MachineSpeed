@@ -15,7 +15,7 @@ namespace MachineSpeed;
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.machinespeed";
-    private const string Version = "0.5.5";
+    private const string Version = "0.6.0";
     private const string Section = "Machines";
     private const string ActionSpeedConfig = "com.dev.survivallog.actionspeed.cfg";
 
@@ -39,6 +39,8 @@ public sealed class Plugin : BasePlugin
         var brewing = Bind("Brewing", "brewing alcohol.", "酿酒的速度。");
         var cooking = Bind("Cooking", "cooking at a stove or hot pot.", "在燃气灶或火锅上烹饪的速度。");
         var compost = Bind("Compost", "compost bins turning food into compost.", "堆肥箱把食物变成堆肥的速度。");
+        OptionalUiSize.Bind(Config);
+
         var cookingFuel = Config.Bind(Section, "CookingFuel", 1f,
             "How much fuel a stove or hot pot uses for each dish, whatever the cooking speed: 1 is the game's amount, 0.5 is half, 0 uses none, 2 is twice as much. From 0 to 20; less than 0 counts as 1.\n" +
             "燃气灶或火锅每道菜消耗的燃料，与烹饪速度无关：1 为游戏原量，0.5 为一半，0 不消耗，2 为两倍。范围 0 到 20，小于 0 按 1 计算。");
