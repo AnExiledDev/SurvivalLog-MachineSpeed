@@ -1,6 +1,6 @@
 # Machine Speed settings
 
-Settings live in `BepInEx\config\com.dev.survivallog.machinespeed.cfg`, created the first time the game starts with the mod. Change them in game on the Mod Manager's Mods screen, where they take effect at once, or edit the file while the game is closed. Delete the file to get the defaults back. Each setting in the file says what it does, in English and Chinese. Without Exiled's Toolkit installed, changes made on the Mods screen take effect at the next game start instead.
+Settings live in `BepInEx\config\com.dev.survivallog.machinespeed.cfg`, created the first time the game starts with the mod. Change them in game on the Mod Manager's Mods screen, where they take effect at once, or edit the file while the game is closed. Delete the file to get the defaults back. Each setting in the file says what it does, in English and Chinese.
 
 Every speed goes from 0.25 to 100000. 1 is the game's own pace, and at 1 the mod leaves that machine alone. 2 takes half the game time, 0.5 takes twice as long, and a very high speed makes a job almost instant (the shortest job is 1 game second). 0 or less counts as 1.
 
@@ -49,7 +49,7 @@ The Machines button in the tool column opens a window with every machine at home
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `Toasts` | `true` | Shows a notice when a machine finishes, a drone comes back or a fuel generator runs out of fuel. Clicking it opens the Machines window. Needs Exiled's Toolkit. |
+| `Toasts` | `true` | Shows a notice when a machine finishes, a drone comes back or a fuel generator runs out of fuel. Clicking it opens the Machines window. |
 | `RushPointsPerHour` | `0.25` | Survival points the Rush button costs for each game hour a job has left, rounded up, at least 1. From 0.01 to 1000; 0 or less counts as 0.25. |
 | `FinishClock` | `false` | Shows the game time a job will be done instead of the time left, in the Machines window and the timers over plants, brewing barrels and dye vats. |
 

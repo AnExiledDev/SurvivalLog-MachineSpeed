@@ -23,11 +23,11 @@ Each machine has its own speed. 2 means a job takes half the game time, 0.5 mean
 - **Machines window**: a Machines button in the tool column lists every machine at home with its picture, what it is making, the time left and when it finishes. Machines that need you are listed first with what to do, then working ones with a progress bar, then idle ones. The button shows how many machines are working and how many need you. Esc closes the window.
 - **Rush**: a Rush button in the Machines window finishes a running job now for survival points, 0.25 per game hour left by default, at least 1. Compost bins, plants, generators and paused jobs cannot be rushed.
 - **UI size**: with Exiled's Toolkit 0.10.0 or newer, its UI size setting (`UiScale`) draws the Machines window bigger or smaller, as far as the window still fits on the screen. The Machines button keeps the game's size. With Toolkit 0.11.0 or newer, Machine Speed's own `UiScale` under Interface sets a size for this mod alone; at 0, the default, it follows the Toolkit's.
-- **Done notices**: with Exiled's Toolkit, a notice pops up when a machine finishes, a drone comes back or a generator runs out of fuel.
+- **Done notices**: a notice pops up when a machine finishes, a drone comes back or a generator runs out of fuel.
 - **Finish clock**: `FinishClock` shows the game time a job finishes instead of the time left.
 - **Log file**: what the mod set up at startup, and the first job each machine did with it, go to `BepInEx\machine-speed.log`.
 
-Speeds changed on the Mod Manager's Mods screen take effect at once with Exiled's Toolkit installed; a change made in the file applies at the next game start. A shred, ration batch, drone trip or cook that is already running keeps the length it started with. Brews, dye jobs, compost bins, plants and fuel generators follow the new speed straight away, including the ones already running. Machine Speed writes no data of its own into your save and does not edit game files. A job's sped-up length is held by the job, so it can end up in your save. You can remove the mod at any time; jobs started after that take the game's own time again.
+Speeds changed on the Mod Manager's Mods screen take effect at once; a change made in the file applies at the next game start. A shred, ration batch, drone trip or cook that is already running keeps the length it started with. Brews, dye jobs, compost bins, plants and fuel generators follow the new speed straight away, including the ones already running. Machine Speed writes no data of its own into your save and does not edit game files. A job's sped-up length is held by the job, so it can end up in your save. You can remove the mod at any time; jobs started after that take the game's own time again.
 
 All settings are listed in [CONFIG.md](CONFIG.md).
 
@@ -49,13 +49,13 @@ All settings are listed in [CONFIG.md](CONFIG.md).
 
 - Survival Log 1.1.19611. Built for this version; a game update can break it until the mod is updated.
 - The [BepInEx Pack for Survival Log](https://www.nexusmods.com/survivallog/mods/12), the BepInEx 6 (IL2CPP) build for the game.
-- Optional: [Exiled's Toolkit](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit) 0.4.0 or newer. With it, settings changed on the Mod Manager's Mods screen take effect without restarting the game. With 0.10.0 or newer, its UI size setting also sizes the Machines window. Without it, settings take effect at the next game start. It also shows the done notices.
+- [Exiled's Toolkit](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit) 0.11.0 or newer. Machine Speed does not load without it. It shows the done notices and Machine Speed's other messages as toasts, applies settings changed on the Mod Manager's Mods screen without a restart, and its UI size setting sizes the Machines window.
 - Optional: Day Length, for `FollowDayLength`.
 
 ## Install
 
 1. Install the [BepInEx Pack for Survival Log](https://www.nexusmods.com/survivallog/mods/12) (if no other mods were installed before, start the game once so BepInEx finishes setup, then quit).
-2. Optional, to change settings without a restart: install Exiled's Toolkit. Download `ExiledToolkit-x.y.z.zip` from [its latest release](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit/releases/latest) or from [Nexus Mods](https://www.nexusmods.com/survivallog/mods/61), and extract it into the game folder (the folder with `SurvivalLog.exe`).
+2. Install Exiled's Toolkit. Download `ExiledToolkit-x.y.z.zip` from [its latest release](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit/releases/latest) or from [Nexus Mods](https://www.nexusmods.com/survivallog/mods/61), and extract it into the game folder (the folder with `SurvivalLog.exe`).
 3. Download `MachineSpeed-x.y.z.zip` from the [latest release](https://github.com/AnExiledDev/SurvivalLog-MachineSpeed/releases/latest) or from [Nexus Mods](https://www.nexusmods.com/survivallog/mods/83).
 4. Extract the zip into the game folder (the folder with `SurvivalLog.exe`). It holds a `BepInEx` folder, so the DLL lands in the right place. When asked, merge the folders. The result should be:
    `C:\Program Files (x86)\Steam\steamapps\common\Survival Log\BepInEx\plugins\MachineSpeed.dll`

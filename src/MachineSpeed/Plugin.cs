@@ -10,12 +10,12 @@ using MachineSpeed.Core;
 namespace MachineSpeed;
 
 [BepInPlugin(Guid, "Machine Speed", Version)]
-[BepInDependency(OptionalLive.ToolkitGuid, BepInDependency.DependencyFlags.SoftDependency)]
+[BepInDependency(OptionalLive.ToolkitGuid, OptionalLive.ToolkitVersion)]
 [BepInDependency(DayLengthWorld.DayLengthGuid, BepInDependency.DependencyFlags.SoftDependency)]
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.machinespeed";
-    private const string Version = "0.6.0";
+    private const string Version = "0.6.1";
     private const string Section = "Machines";
     private const string ActionSpeedConfig = "com.dev.survivallog.actionspeed.cfg";
 
@@ -24,8 +24,6 @@ public sealed class Plugin : BasePlugin
 
     public override void Load()
     {
-        if (!OptionalLive.IsToolkitInstalled) Log.LogInfo(OptionalLive.MissingNote);
-
         var log = new SpeedLog(Log, Path.Combine(Paths.BepInExRootPath, "machine-speed.log"));
 
         log.TrimIfLarge();

@@ -103,7 +103,7 @@ internal sealed class OverviewSession
         {
             _log($"Machines window command {command} failed: {ex}");
 
-            if (command is OverviewCommand.Rush) _page.Status(OverviewTexts.RushFailed.Pick(IsChinese));
+            if (command is OverviewCommand.Rush) Say(OverviewTexts.RushFailed.Pick(IsChinese), ExiledToolkit.ToastKind.Error);
         }
     }
 
@@ -162,8 +162,19 @@ internal sealed class OverviewSession
         var isChinese = IsChinese;
         var outcome = _rusher.Rush(rush.Kind, rush.Id, _pointsPerHour, isChinese);
 
-        _page.Status(OverviewTexts.Describe(outcome, isChinese));
+        Say(OverviewTexts.Describe(outcome, isChinese), ExiledToolkit.ToastKind.Info);
         RefreshNow();
+    }
+
+    /// <summary>
+    /// A press result: in the window's footer while it is open, as an Exiled's Toolkit toast while it is shut. The page
+    /// hears it either way, since its answer frees the buttons.
+    /// </summary>
+    private void Say(string text, ExiledToolkit.ToastKind kind)
+    {
+        _page.Status(text);
+
+        if (!_isOpen) _toasts.Say(text, kind, IsChinese);
     }
 
     /// <summary>
@@ -269,7 +280,7 @@ internal sealed class OverviewSession
 
         if (read is MachineRead.NoGame)
         {
-            _page.Status(OverviewTexts.NoGame.Pick(isChinese));
+            Say(OverviewTexts.NoGame.Pick(isChinese), ExiledToolkit.ToastKind.Warning);
             _nextRefreshAt = 0f;
 
             return;

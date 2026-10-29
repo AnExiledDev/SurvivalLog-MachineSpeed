@@ -18,8 +18,8 @@ internal static class Overview
     public static void Install(BasePlugin plugin, ConfigFile config, Harmony harmony, SpeedLog log)
     {
         var toasts = config.Bind(Section, "Toasts", true,
-            "Show a notice when a machine finishes, a drone comes back or a fuel generator runs out of fuel. Clicking it opens the Machines window. The notice needs Exiled's Toolkit.\n" +
-            "机器完成、无人机返回或燃油发电机燃料耗尽时显示通知，点击通知打开「机器总览」窗口。通知需要 Exiled's Toolkit。");
+            "Show a notice when a machine finishes, a drone comes back or a fuel generator runs out of fuel. Clicking it opens the Machines window.\n" +
+            "机器完成、无人机返回或燃油发电机燃料耗尽时显示通知，点击通知打开「机器总览」窗口。");
         var rushPointsPerHour = config.Bind(Section, "RushPointsPerHour", (float)RushCost.DefaultPointsPerHour,
             "Survival points the Rush button in the Machines window costs for each game hour a job has left. The cost is rounded up to whole points, at least 1. From 0.01 to 1000; 0 or less counts as 0.25.\n" +
             "「机器总览」窗口中「加速完成」按钮按任务剩余的每个游戏小时花费的生存点。花费向上取整，至少 1 点。范围 0.01 到 1000，0 或更小按 0.25 计算。");

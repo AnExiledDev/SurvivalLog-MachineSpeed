@@ -1,21 +1,16 @@
 using System;
-using System.IO;
-using System.Runtime.CompilerServices;
 using MachineSpeed.Core;
 
 namespace MachineSpeed.Adapters;
 
 /// <summary>
-/// Shows a "done" toast through Exiled's Toolkit when it is installed. Without it nothing shows. Only
-/// <see cref="ShowWithToolkit"/> names a Toolkit type, so the mod loads without it. Clicking a toast opens the
-/// Machines window.
+/// Shows Machine Speed's messages as Exiled's Toolkit toasts: a "done" toast, which opens the Machines window when
+/// clicked, and a press result while the window is shut.
 /// </summary>
 internal sealed class DoneToasts
 {
     private readonly Action _openWindow;
     private readonly Action<string> _log;
-    private bool _isBroken;
-    private bool _hasReportedFailure;
 
     public DoneToasts(Action openWindow, Action<string> log)
     {
@@ -23,41 +18,22 @@ internal sealed class DoneToasts
         _log = log;
     }
 
-    public void Show(DoneNote note, bool isChinese)
-    {
-        if (_isBroken || !OptionalLive.IsToolkitInstalled) return;
-
-        try
-        {
-            ShowWithToolkit(note, isChinese, _openWindow);
-        }
-        catch (Exception ex) when (ex is TypeLoadException or MissingMethodException or FileNotFoundException or FileLoadException)
-        {
-            _isBroken = true;
-            ReportOnce($"Exiled's Toolkit could not show a toast, so finished machines are shown in the Machines window only: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            ReportOnce($"could not show a finished-machine toast (reported once): {ex.Message}");
-        }
-    }
-
-    // Kept in its own method so the Toolkit's types are only looked up when it is installed.
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void ShowWithToolkit(DoneNote note, bool isChinese, Action openWindow) =>
-        ExiledToolkit.Toasts.Show(new ExiledToolkit.ToastRequest(OverviewTexts.ToastSource.Pick(isChinese), OverviewTexts.ToastTitle(note, isChinese))
+    public void Show(DoneNote note, bool isChinese) =>
+        Show(new ExiledToolkit.ToastRequest(OverviewTexts.ToastSource.Pick(isChinese), OverviewTexts.ToastTitle(note, isChinese))
         {
             Body = OverviewTexts.ToastBody(note, isChinese),
             Kind = note.What == DoneWhat.OutOfFuel ? ExiledToolkit.ToastKind.Warning : ExiledToolkit.ToastKind.Success,
             Key = "machinespeed|" + OverviewView.Key(note.Row),
-            OnClick = openWindow,
+            OnClick = _openWindow,
         });
 
-    private void ReportOnce(string message)
+    public void Say(string text, ExiledToolkit.ToastKind kind, bool isChinese)
     {
-        if (_hasReportedFailure) return;
+        if (text.Length > 0) Show(new ExiledToolkit.ToastRequest(OverviewTexts.ToastSource.Pick(isChinese), text) { Kind = kind });
+    }
 
-        _hasReportedFailure = true;
-        _log(message);
+    private void Show(ExiledToolkit.ToastRequest request)
+    {
+        if (ExiledToolkit.Toasts.Show(request).IsNone) _log("a toast was not shown: " + request.Title);
     }
 }

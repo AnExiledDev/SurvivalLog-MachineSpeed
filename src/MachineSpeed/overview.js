@@ -12,7 +12,6 @@
   // The Machines button's place in the HUD's tool column when Exiled's Toolkit lays it out in columns of four.
   var DOCK_ORDER = '50';
   var BUSY_TIMEOUT_MS = 5000;
-  var TOAST_MS = 3500;
   var SVG_NS = 'http://www.w3.org/2000/svg';
   var CLOSE_MARK = String.fromCharCode(215);
   // A gear, drawn on the 24-unit grid the game's HUD icons use.
@@ -22,7 +21,6 @@
   var ui = null;
   var shownKeys = '';
   var rowNodes = [];
-  var toastTimer = 0;
   var isBusy = false;
   var busyTimer = 0;
   // The HUD button as placed: its iframe, document, column and the parts that change, so a check or a new count
@@ -142,8 +140,7 @@
     '.mso-empty svg{width:54px;height:54px;fill:rgba(255,200,58,.25)}',
     '.mso-foot{display:flex;align-items:center;gap:8px;font-size:13px;color:#a89a82;border-top:1px solid rgba(220,188,120,.11);padding-top:10px;min-height:18px}',
     '.mso-status{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#b5e09a}',
-    '.mso-kbd{font-size:12px;color:#cbbfa8;border:1px solid rgba(220,188,120,.4);border-bottom-width:2px;border-radius:4px;padding:0 6px}',
-    '#mso-toast{position:fixed;left:50%;bottom:120px;transform:translateX(-50%);z-index:2147483001;pointer-events:none;display:none;max-width:640px;text-align:center;padding:10px 18px;border-radius:4px;border:1px solid rgba(255,200,58,.6);background:linear-gradient(180deg,rgba(64,52,40,.97),rgba(44,36,28,.97));color:#f0e8d8;font-family:"Microsoft YaHei","PingFang SC",sans-serif;font-size:15px;box-shadow:0 8px 30px rgba(0,0,0,.6)}'
+    '.mso-kbd{font-size:12px;color:#cbbfa8;border:1px solid rgba(220,188,120,.4);border-bottom-width:2px;border-radius:4px;padding:0 6px}'
   ].join('\n');
 
   function build() {
@@ -187,21 +184,16 @@
     plate.appendChild(foot);
     root.appendChild(plate);
 
-    var toast = el('div');
-    toast.id = 'mso-toast';
-
     document.body.appendChild(root);
-    document.body.appendChild(toast);
     // Drawn at the player's UI size (Exiled's Toolkit). The full-screen mask always fills the screen, so the window on
-    // it is what must fit; the short notice is never shrunk.
+    // it is what must fit.
     uiSize(root, { fit: plate });
-    uiSize(toast, { fit: false });
 
     root.addEventListener('click', onClick);
     // Clicks inside the window must not reach the game pages underneath; the mask itself closes nothing on purpose.
     root.addEventListener('mousedown', function (e) { e.stopPropagation(); });
 
-    ui = { root: root, title: titleText, sub: sub, have: have, points: points, pointsLabel: pointsLabel, list: list, status: status, toClose: toClose, toast: toast };
+    ui = { root: root, title: titleText, sub: sub, have: have, points: points, pointsLabel: pointsLabel, list: list, status: status, toClose: toClose };
   }
 
   // Hands a panel to Exiled's Toolkit to be drawn at the player's UI size. Before the Toolkit's script has loaded it
@@ -499,7 +491,6 @@
     state.data = data || state.data;
     state.isOpen = true;
     ui.status.textContent = '';
-    ui.toast.style.display = 'none';
     ui.root.style.display = 'flex';
     render();
   }
@@ -521,23 +512,8 @@
     build();
     clearBusy();
 
-    if (state.isOpen) {
-      ui.status.textContent = text;
-
-      return;
-    }
-
-    // An empty status only clears the line; as a toast it would be an empty box.
-    if (!text) {
-      ui.toast.style.display = 'none';
-
-      return;
-    }
-
-    ui.toast.textContent = text;
-    ui.toast.style.display = 'block';
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { ui.toast.style.display = 'none'; }, TOAST_MS);
+    // While the window is shut the plugin shows the result as an Exiled's Toolkit toast.
+    if (state.isOpen) ui.status.textContent = text;
   }
 
   // Whether a game is loaded (the HUD button is only shown then), and the button's tip in the game's language.

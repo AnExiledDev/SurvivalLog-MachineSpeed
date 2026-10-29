@@ -47,7 +47,7 @@ internal sealed class OverviewPage
 
     public void Close() => Call("close()");
 
-    /// <summary>A result line: in the window's footer while it is open, as a short note otherwise.</summary>
+    /// <summary>A result line in the window's footer while it is open. It also frees the buttons.</summary>
     public void Status(string text) => Call($"status({JsText.Literal(text)})");
 
     /// <summary>Whether a game is loaded (the HUD button shows only then), with the button's tooltip.</summary>

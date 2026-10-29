@@ -17,7 +17,8 @@ internal static class OptionalLive
 {
     public const string ToolkitGuid = "com.dev.survivallog.exiledtoolkit";
 
-    public const string MissingNote = "Exiled's Toolkit is not installed, so settings are read once at start. Install Toolkit 0.4.0 or newer to change settings in game without a restart.";
+    /// <summary>The oldest Toolkit the mod loads with: its toasts, live settings and UI size all come from it.</summary>
+    public const string ToolkitVersion = ">=0.11.0";
 
     private static readonly Lazy<ManualLogSource> Log = new(() => Logger.CreateLogSource(typeof(OptionalLive).Assembly.GetName().Name ?? "Settings"));
 
