@@ -107,14 +107,6 @@ public class ScalingTests
     }
 
     [Fact]
-    public void A_faster_burn_takes_more_fuel_and_a_slower_one_less()
-    {
-        Assert.Equal(4f, Scaling.Burn(2f, Double));
-        Assert.Equal(1f, Scaling.Burn(2f, Half));
-        Assert.Equal(0f, Scaling.Burn(0f, Double));
-    }
-
-    [Fact]
     public void A_faster_drone_returns_sooner_from_the_same_departure()
     {
         Assert.Equal(1000 + 300, Scaling.ReturnTime(1000, 1600, Double));

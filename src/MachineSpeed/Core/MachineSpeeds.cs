@@ -78,10 +78,6 @@ public static class Scaling
     public static int Shown(int gameValue, Speed speed) =>
         speed.IsGamePace || gameValue <= 0 ? gameValue : Math.Max(1, (int)Math.Ceiling(gameValue / (double)speed.Value));
 
-    /// <summary>Fuel a generator takes for one stretch of running: a faster burn takes more, so fuel runs out sooner.</summary>
-    public static float Burn(float gameBurn, Speed speed) =>
-        speed.IsGamePace || !float.IsFinite(gameBurn) || gameBurn <= 0f ? gameBurn : gameBurn * speed.Value;
-
     /// <summary>
     /// The game burns cooking fuel by how far a cook is times its length, so a faster cook would burn less per dish.
     /// Raising the rate by the cooking speed keeps the fuel per dish the game's, and the fuel amount then sets it.

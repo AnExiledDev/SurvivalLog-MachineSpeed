@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.0
+
+- FuelBurn and GeneratorEfficiency moved to the new Power Manager mod. Power Manager carries over your values the first time it starts.
+- Made for Survival Log 1.1.19611.
+
 ## 0.6.1
 
 - Machine Speed's messages shown while the Machines window is shut, such as "Load a game first.", are now Exiled's Toolkit toasts. Those toasts also go to the Notifications history.

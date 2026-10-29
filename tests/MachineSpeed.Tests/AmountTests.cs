@@ -219,39 +219,3 @@ public class AmountsTests
         Assert.Equal(3f, Amounts.Reapply(6f, 2f, Multiplier.GameAmount), 5);
     }
 }
-
-public class TableValueTests
-{
-    private static Multiplier Times(float value) => Multiplier.From(value, 0f, 100f);
-
-    [Fact]
-    public void A_row_seen_for_the_first_time_is_multiplied()
-    {
-        Assert.Equal(new TableValue(10f, 20f), TableValue.Next(10f, null, Times(2f)));
-    }
-
-    [Fact]
-    public void A_row_holding_the_written_value_is_never_multiplied_twice()
-    {
-        var first = TableValue.Next(10f, null, Times(2f));
-
-        Assert.Equal(first, TableValue.Next(first.Written, first, Times(2f)));
-    }
-
-    [Fact]
-    public void A_change_of_setting_starts_again_from_the_game_value()
-    {
-        var first = TableValue.Next(10f, null, Times(2f));
-
-        Assert.Equal(new TableValue(10f, 30f), TableValue.Next(first.Written, first, Times(3f)));
-        Assert.Equal(new TableValue(10f, 10f), TableValue.Next(first.Written, first, Multiplier.GameAmount));
-    }
-
-    [Fact]
-    public void A_reloaded_table_is_taken_as_the_new_game_value()
-    {
-        var first = TableValue.Next(10f, null, Times(2f));
-
-        Assert.Equal(new TableValue(12f, 24f), TableValue.Next(12f, first, Times(2f)));
-    }
-}

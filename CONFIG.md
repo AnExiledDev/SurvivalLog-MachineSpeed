@@ -4,6 +4,8 @@ Settings live in `BepInEx\config\com.dev.survivallog.machinespeed.cfg`, created 
 
 Every speed goes from 0.25 to 100000. 1 is the game's own pace, and at 1 the mod leaves that machine alone. 2 takes half the game time, 0.5 takes twice as long, and a very high speed makes a job almost instant (the shortest job is 1 game second). 0 or less counts as 1.
 
+Generator fuel burn and generator efficiency are now in the Power Manager mod, which carries over your values the first time it starts.
+
 ## Machines
 
 | Setting | Default | What it does |
@@ -13,12 +15,11 @@ Every speed goes from 0.25 to 100000. 1 is the game's own pace, and at 1 the mod
 | `DyeVat` | `1` | Speed of the dye vat. |
 | `Compost` | `1` | Speed of compost bins turning food into compost. |
 | `PlantGrowth` | `1` | Speed of plant growth. |
-| `FuelBurn` | `1` | How fast fuel generators burn fuel. 2 burns it twice as fast, 0.5 makes it last twice as long. |
 | `DroneTrips` | `1` | Speed of drone trips: a faster trip brings the drone back sooner. |
 | `Brewing` | `1` | Speed of brewing alcohol. |
 | `Cooking` | `1` | Speed of cooking at a stove or hot pot. It burns the same fuel per dish at any speed. |
 | `CookingFuel` | `1` | How much fuel a stove or hot pot uses for each dish. 1 is the game's amount, 0.5 is half, 0 uses none, 2 is twice as much. From 0 to 20; less than 0 counts as 1. |
-| `Preset` | `Custom` | Sets every machine speed at once. `Custom` uses each machine's own speed; `Vanilla` is the game's pace; `Relaxed` is 2x; `Fast` is 5x; `Instant` is 100000x. `FuelBurn` and `CookingFuel` keep their own settings. |
+| `Preset` | `Custom` | Sets every machine speed at once. `Custom` uses each machine's own speed; `Vanilla` is the game's pace; `Relaxed` is 2x; `Fast` is 5x; `Instant` is 100000x. `CookingFuel` keeps its own setting. |
 | `ShredderAutoStart` | `false` | Starts an idle shredder by itself when you put items into it, as if you pressed Start. Taking items out does not start it, so a shredder you stopped stays stopped until you add more. It still needs power and room in its tray. |
 | `FollowDayLength` | `false` | With the Day Length mod, machines keep their pace in real time: with days twice as long, every machine speed is doubled, on top of the preset. Follows Day Length from when a save loads. Does nothing without Day Length. |
 
@@ -38,7 +39,6 @@ How much machines make, hold and use. 1 is the game's amount, and at 1 the mod l
 | `BarrelCapacity` | `1` | 1 to 100 | The most bottles a barrel can make in one brew, rounded to whole bottles. The extra bottles still need enough ingredients. |
 | `RobotCharging` | `1` | 0.1 to 100 | How fast robots charge. Drones do not charge. |
 | `FridgeStrength` | `1` | 0.1 to 100 | How strongly powered fridges and freezers slow spoiling: 2 halves the spoiling. Never faster than outside a fridge or slower than a sealed cold store. |
-| `GeneratorEfficiency` | `1` | 0.1 to 100 | Power fuel generators make from the same fuel. How fast they burn it is `FuelBurn`. |
 | `EquipmentWear` | `1` | 0 to 100 | Durability defense devices lose to wear and attacks. 0 means no wear. Doors and windows are not changed. |
 
 Below the range counts as 1 (or as the bottom of the range for a small positive number on the 0.1 settings); above it counts as the top.

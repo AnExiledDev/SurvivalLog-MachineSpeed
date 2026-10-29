@@ -1,6 +1,8 @@
 # Machine Speed
 
-Sets how fast the machines at your base work: the shredder, the Ration Press, the dye vat, compost bins, plant growth, fuel generators, drone trips, brewing and cooking.
+Sets how fast the machines at your base work: the shredder, the Ration Press, the dye vat, compost bins, plant growth, drone trips, brewing and cooking.
+
+Generator fuel burn and generator efficiency are now in the Power Manager mod, which carries over your values the first time it starts.
 
 Each machine has its own speed. 2 means a job takes half the game time, 0.5 means twice as long. Speeds go up to 100000, so a job can be close to instant: the shortest job is 1 game second. Every speed defaults to 1, and at 1 the mod does not touch that machine at all, so you only change what you set.
 
@@ -10,7 +12,6 @@ Each machine has its own speed. 2 means a job takes half the game time, 0.5 mean
 - **Dye vat**: each bucket takes less time, and a fast vat finishes a bucket in seconds. The vat's panel shows the real time per bucket, for the batch, and left on a running job, to the minute, and the timer over the vat shows the real time for the bucket being dyed.
 - **Compost bins**: food in a compost bin turns into compost sooner. Only the bin is sped up; food anywhere else rots at the game's pace.
 - **Plant growth**: plants grow faster or slower. The timer over each plant and the planting panel's estimate show the sped-up time, and plants already growing when the speed changes move to the new speed within a few seconds.
-- **Fuel burn**: how fast fuel generators use up fuel. 2 burns it twice as fast; 0.5 makes a tank last twice as long. The time left on the generator's panel follows it.
 - **Drone trips**: a drone comes back sooner.
 - **Brewing**: a brew takes less time, and a fast brew finishes in seconds. The brewing panel shows the real time a brew will take and the real time left on a running one, to the minute. The timer over the barrel shows the same time.
 - **Cooking** at a stove or hot pot takes less time. It burns the same fuel per dish at any speed.
@@ -19,7 +20,7 @@ Each machine has its own speed. 2 means a job takes half the game time, 0.5 mean
 - **Presets**: `Preset` sets every speed at once: Vanilla, Relaxed (2x), Fast (5x) or Instant.
 - **Shredder auto-start**: with `ShredderAutoStart` on, an idle shredder starts by itself when you put items into it.
 - **Follow Day Length**: with the Day Length mod, `FollowDayLength` keeps machines at their real-time pace on longer or shorter days.
-- **Amounts**: more output from the shredder, Ration Press, brewing, compost bins and harvests; bigger brews; faster robot charging; stronger fridges and freezers; more power per unit of generator fuel; and less wear on defense devices. See the Amounts section of [CONFIG.md](CONFIG.md).
+- **Amounts**: more output from the shredder, Ration Press, brewing, compost bins and harvests; bigger brews; faster robot charging; stronger fridges and freezers; and less wear on defense devices. See the Amounts section of [CONFIG.md](CONFIG.md).
 - **Machines window**: a Machines button in the tool column lists every machine at home with its picture, what it is making, the time left and when it finishes. Machines that need you are listed first with what to do, then working ones with a progress bar, then idle ones. The button shows how many machines are working and how many need you. Esc closes the window.
 - **Rush**: a Rush button in the Machines window finishes a running job now for survival points, 0.25 per game hour left by default, at least 1. Compost bins, plants, generators and paused jobs cannot be rushed.
 - **UI size**: with Exiled's Toolkit 0.10.0 or newer, its UI size setting (`UiScale`) draws the Machines window bigger or smaller, as far as the window still fits on the screen. The Machines button keeps the game's size. With Toolkit 0.11.0 or newer, Machine Speed's own `UiScale` under Interface sets a size for this mod alone; at 0, the default, it follows the Toolkit's.
@@ -27,7 +28,7 @@ Each machine has its own speed. 2 means a job takes half the game time, 0.5 mean
 - **Finish clock**: `FinishClock` shows the game time a job finishes instead of the time left.
 - **Log file**: what the mod set up at startup, and the first job each machine did with it, go to `BepInEx\machine-speed.log`.
 
-Speeds changed on the Mod Manager's Mods screen take effect at once; a change made in the file applies at the next game start. A shred, ration batch, drone trip or cook that is already running keeps the length it started with. Brews, dye jobs, compost bins, plants and fuel generators follow the new speed straight away, including the ones already running. Machine Speed writes no data of its own into your save and does not edit game files. A job's sped-up length is held by the job, so it can end up in your save. You can remove the mod at any time; jobs started after that take the game's own time again.
+Speeds changed on the Mod Manager's Mods screen take effect at once; a change made in the file applies at the next game start. A shred, ration batch, drone trip or cook that is already running keeps the length it started with. Brews, dye jobs, compost bins and plants follow the new speed straight away, including the ones already running. Machine Speed writes no data of its own into your save and does not edit game files. A job's sped-up length is held by the job, so it can end up in your save. You can remove the mod at any time; jobs started after that take the game's own time again.
 
 All settings are listed in [CONFIG.md](CONFIG.md).
 

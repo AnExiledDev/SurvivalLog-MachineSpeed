@@ -3,7 +3,6 @@ using BepInEx.Configuration;
 using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
 using MachineSpeed.Core;
-using UnityEngine;
 
 namespace MachineSpeed.Adapters;
 
@@ -30,7 +29,6 @@ internal static class AmountPatches
         BarrelCapacityPatch.Apply(harmony, log);
         RobotChargingPatch.Apply(harmony, log);
         FridgeStrengthPatch.Apply(harmony, log);
-        GeneratorPower.UseLog(log);
         EquipmentWearPatch.Apply(harmony, log);
 
         var config = plugin.Config;
@@ -59,14 +57,9 @@ internal static class AmountPatches
         Watch(config, log, "FridgeStrength", 0.1f, 100f, FridgeStrengthPatch.Use,
             $"How strongly powered fridges and freezers slow spoiling: 2 makes food in them spoil half as fast, 0.5 twice as fast. Food in a fridge never spoils faster than outside one, or slower than in a sealed cold store. In a cold room the game uses whichever is colder, the room or the fridge. {RateRange}",
             $"通电的冰箱和冰柜减缓食物腐烂的强度：2 让其中食物的腐烂速度减半，0.5 让腐烂速度加倍。冰箱里的食物不会比冰箱外腐烂得更快，也不会比密封冷库里更慢。在寒冷房间里，游戏取房间和冰箱中更冷的一方。{RateRangeChinese}");
-        Watch(config, log, "GeneratorEfficiency", 0.1f, 100f, GeneratorPower.Use,
-            $"How much power fuel generators make from the same fuel: 2 is twice the power from each unit of fuel, 0.5 is half. How fast they burn fuel is FuelBurn in the Machines section. {RateRange}",
-            $"燃油发电机消耗相同燃料时的发电量：2 为每份燃料发出两倍电力，0.5 为一半。燃料消耗速度由 Machines 分区的 FuelBurn 设置。{RateRangeChinese}");
         Watch(config, log, "EquipmentWear", 0f, 100f, EquipmentWearPatch.Use,
             "How much durability defense devices lose to wear and attacks: 1 is the game's amount, 0.5 is half, 0 means no wear, 2 is twice as much. Doors and windows are not changed, and the wave report still counts the game's wear. Fractions carry over to the next hit. From 0 to 100: less than 0 counts as 1, more than 100 counts as 100.",
             "防御装置因损耗和攻击失去的耐久：1 为游戏原量，0.5 为一半，0 为无损耗，2 为两倍。门窗不受影响，波次战报仍按游戏原本的「装置损耗」计算。小数部分累计到下一次。范围 0 到 100：小于 0 按 1 计算，大于 100 按 100 计算。");
-
-        StartTicker(plugin, log);
     }
 
     private static void Watch(ConfigFile config, SpeedLog log, string key, float least, float most, Action<Multiplier> use, string english, string chinese)
@@ -81,19 +74,6 @@ internal static class AmountPatches
 
             use(multiplier);
         });
-    }
-
-    /// <summary>The generator table is checked every few seconds, so a reload of the game's tables is written over again.</summary>
-    private static void StartTicker(BasePlugin plugin, SpeedLog log)
-    {
-        try
-        {
-            plugin.AddComponent<AmountTicker>();
-        }
-        catch (Exception ex)
-        {
-            log.Write($"could not start the generator table check, a reloaded table keeps the game's power until the setting changes: {ex.Message}");
-        }
     }
 }
 
@@ -173,26 +153,5 @@ internal sealed class AmountHook
         {
             _log.Write($"{_name} x{multiplier.Value:0.##}, its panel still shows the game's value ({ex.Message})");
         }
-    }
-}
-
-public sealed class AmountTicker : MonoBehaviour
-{
-    private const float SweepSeconds = 5f;
-
-    private float _nextSweep;
-
-    public AmountTicker(IntPtr pointer) : base(pointer)
-    {
-    }
-
-    private void Update()
-    {
-        var now = Time.unscaledTime;
-
-        if (now < _nextSweep) return;
-
-        _nextSweep = now + SweepSeconds;
-        GeneratorPower.Sweep();
     }
 }

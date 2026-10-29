@@ -160,18 +160,3 @@ public static class Amounts
             ? gameRate
             : Math.Clamp(gameRate / strength.Value, ColdestRate, 1f);
 }
-
-/// <summary>A table value this mod wrote over: the game's own value and what was written in its place.</summary>
-public readonly record struct TableValue(float Game, float Written)
-{
-    /// <summary>
-    /// The value to write now. A value that is not the one last written is the game's (a new row, or a table the game
-    /// loaded again), so it becomes the new original; the multiplier is always applied to the original, never twice.
-    /// </summary>
-    public static TableValue Next(float current, TableValue? last, Multiplier multiplier)
-    {
-        var game = last is { } written && current == written.Written ? written.Game : current;
-
-        return new TableValue(game, Amounts.Rate(game, multiplier));
-    }
-}

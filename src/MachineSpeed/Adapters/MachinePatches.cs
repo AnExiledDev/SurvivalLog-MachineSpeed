@@ -197,62 +197,6 @@ internal static class PlantGrowthPatch
     }
 }
 
-/// <summary>
-/// A fuel generator takes fuel as it runs; taking more per stretch makes the tank run dry sooner. The panel's time
-/// left is divided by the same speed so it matches.
-/// </summary>
-internal static class FuelBurnPatch
-{
-    private static Speed _speed = Speed.GamePace;
-    private static MachineHook? _hook;
-    private static HookFailures _failures = HookFailures.Silent;
-    private static FirstUse _first = FirstUse.Silent;
-
-    public static void Apply(Harmony harmony, SpeedLog log)
-    {
-        (_failures, _first) = (new HookFailures(log.Write, "changing the fuel burn"), new FirstUse(log.WriteFileOnly));
-        _hook = new MachineHook(log, "fuel burn",
-            () => harmony.Patch(Machine.Method(typeof(GeneratorFuelComponent), nameof(GeneratorFuelComponent.ConsumeFuel)), prefix: Machine.Patch(typeof(FuelBurnPatch), nameof(ScaleBurn))),
-            () => harmony.Patch(Machine.Method(typeof(GeneratorFuelComponent), nameof(GeneratorFuelComponent.GetRemainingGameSeconds)), postfix: Machine.Patch(typeof(FuelBurnPatch), nameof(ScaleTimeLeft))));
-    }
-
-    /// <summary>Called on the main thread at start and after each change of the setting.</summary>
-    public static void Use(Speed speed)
-    {
-        _speed = speed;
-        _hook?.Use(speed);
-    }
-
-    private static void ScaleBurn(ref float burnValueToConsume)
-    {
-        try
-        {
-            var gameBurn = burnValueToConsume;
-
-            var burn = Scaling.Burn(gameBurn, _speed);
-
-            burnValueToConsume = burn;
-            if (_first.IsPending) _first.Note($"first fuel burn: game {gameBurn:0.###}, now {burn:0.###}");
-        }
-        catch (Exception ex)
-        {
-            _failures.Report(ex);
-        }
-    }
-
-    private static void ScaleTimeLeft(ref float __result)
-    {
-        try
-        {
-            __result = Scaling.Duration(__result, _speed);
-        }
-        catch (Exception ex)
-        {
-            _failures.Report(ex);
-        }
-    }
-}
-
 /// <summary>A drone trip is given its return time, in game seconds, when it departs.</summary>
 internal static class DroneTripPatch
 {
