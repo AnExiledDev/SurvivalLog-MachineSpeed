@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.1
+
+- Fridge Strength now keeps working once you have the fridge talent. The talent capped fridges at 10x, so a strength of 100 showed 500x early in a run and only 10x later. The talent's bonus now counts first and the strength goes on top.
+- Made for Survival Log 1.1.20151.
+
 ## 0.8.0
 
 - New: a finished dish or brew has a Collect button in the Machines window. Your survivor walks to the stove or brewing barrel and takes it out, after whatever they are doing now.

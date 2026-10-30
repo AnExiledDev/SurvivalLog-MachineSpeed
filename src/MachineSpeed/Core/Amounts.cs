@@ -159,4 +159,21 @@ public static class Amounts
         strength.IsGameAmount || !float.IsFinite(gameRate) || gameRate <= 0f || gameRate >= 1f
             ? gameRate
             : Math.Clamp(gameRate / strength.Value, ColdestRate, 1f);
+
+    /// <summary>The lowest spoil rate the fridge talent can bring a fridge to, a tenth of the normal rate.</summary>
+    public const float TalentFloor = 0.1f;
+
+    /// <summary>
+    /// A fridge's spoil rate with the fridge talent, worked out as the game does: the talent's share comes off the
+    /// rate, but never below <see cref="TalentFloor"/>.
+    /// </summary>
+    public static float TalentColdRate(float gameRate, float talentRatio) =>
+        gameRate < 1f && talentRatio > 0f ? Math.Max(TalentFloor, Math.Max(0f, 1f - talentRatio) * gameRate) : gameRate;
+
+    /// <summary>
+    /// A fridge's spoil rate with the fridge talent first and the strength after it. The game applies the talent last
+    /// and stops it at a tenth, which would undo any strength past that once the player has the talent.
+    /// </summary>
+    public static float FridgeRate(float gameRate, float talentRatio, Multiplier strength) =>
+        ColdRate(TalentColdRate(gameRate, float.IsFinite(talentRatio) ? talentRatio : 0f), strength);
 }

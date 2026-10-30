@@ -137,10 +137,14 @@ internal static class RobotChargingPatch
 /// everything else that reads the table (which storage counts as a fridge, the freezer labels) sees the game's value.
 /// The game's own rules still apply: the fridge is only used while powered, and a cold room colder than the fridge
 /// wins. The panels' preservation figures are brought in step.
+/// The fridge talent is the exception: the game applies it after reading the rate and never lets it go under a tenth,
+/// which would undo the strength. So the talent goes into the rate here, and the game's own talent read for that call
+/// answers 0.
 /// </summary>
 internal static class FridgeStrengthPatch
 {
     private const int FridgeElectricalType = 1;
+    private const string FridgeTalentKey = "Buff_AE_FridgeColdEnhance";
 
     private static Multiplier _strength = Multiplier.GameAmount;
     private static AmountHook? _hook;
@@ -149,17 +153,24 @@ internal static class FridgeStrengthPatch
     private static readonly StampedCache<int, long, Config_Furniture?> FridgesThisFrame = new();
     private static Config_Furniture? _changedRow;
     private static float _gameRate;
+    private static bool _hideTalent;
+    private static int _talentFrame = -1;
+    private static float _talent;
 
     public static void Apply(Harmony harmony, SpeedLog log)
     {
         (_failures, _first) = (new HookFailures(log.Write, "changing fridge strength", "rate"), new FirstUse(log.WriteFileOnly));
         _hook = new AmountHook(log, "fridge strength",
-            () => harmony.Patch(Machine.Method(typeof(ItemManager), "ComputeItemTimeScale"), prefix: Machine.Patch(typeof(FridgeStrengthPatch), nameof(StrengthenFridge)),
-                postfix: Machine.Patch(typeof(FridgeStrengthPatch), nameof(PutBack))),
             () =>
             {
-                harmony.Patch(Machine.Method(typeof(FridgeDisplayRules), nameof(FridgeDisplayRules.GetEffectiveColdRate)), prefix: Machine.Patch(typeof(FridgeStrengthPatch), nameof(ScaleShown)));
-                harmony.Patch(Machine.Method(typeof(FridgeDisplayRules), nameof(FridgeDisplayRules.GetPreservationRate)), prefix: Machine.Patch(typeof(FridgeStrengthPatch), nameof(ScaleShown)));
+                harmony.Patch(Machine.Method(typeof(ItemManager), "GetTalentEffectRatio"), prefix: Machine.Patch(typeof(FridgeStrengthPatch), nameof(HideTalent)));
+                harmony.Patch(Machine.Method(typeof(ItemManager), "ComputeItemTimeScale"), prefix: Machine.Patch(typeof(FridgeStrengthPatch), nameof(StrengthenFridge)),
+                    postfix: Machine.Patch(typeof(FridgeStrengthPatch), nameof(PutBack)));
+            },
+            () =>
+            {
+                harmony.Patch(Machine.Method(typeof(FridgeDisplayRules), nameof(FridgeDisplayRules.GetEffectiveColdRate)), postfix: Machine.Patch(typeof(FridgeStrengthPatch), nameof(ScaleShownRate)));
+                harmony.Patch(Machine.Method(typeof(FridgeDisplayRules), nameof(FridgeDisplayRules.GetPreservationRate)), postfix: Machine.Patch(typeof(FridgeStrengthPatch), nameof(ScaleShownFigure)));
             });
     }
 
@@ -176,16 +187,21 @@ internal static class FridgeStrengthPatch
         {
             PutBack();
 
-            if (item == null || _strength.IsGameAmount || FridgeRowOf(item) is not { } row) return;
+            if (item == null || _strength.IsGameAmount) return;
+
+            var frame = UnityEngine.Time.frameCount;
+
+            if (FridgeRowOf(item, frame) is not { } row) return;
 
             var gameRate = row._ColdRate_k__BackingField;
-            var rate = Amounts.ColdRate(gameRate, _strength);
+            var talent = FridgeTalent(frame);
+            var rate = Amounts.FridgeRate(gameRate, talent, _strength);
 
-            if (rate == gameRate) return;
+            if (rate == Amounts.TalentColdRate(gameRate, talent)) return;
 
-            (_changedRow, _gameRate) = (row, gameRate);
+            (_changedRow, _gameRate, _hideTalent) = (row, gameRate, talent > 0f);
             row._ColdRate_k__BackingField = rate;
-            if (_first.IsPending) _first.Note($"first fridge cold rate: game {gameRate:0.###}, now {rate:0.###}");
+            if (_first.IsPending) _first.Note($"first fridge cold rate: game {gameRate:0.###}, talent {talent:0.###}, now {rate:0.###}");
         }
         catch (Exception ex)
         {
@@ -195,6 +211,8 @@ internal static class FridgeStrengthPatch
 
     private static void PutBack()
     {
+        _hideTalent = false;
+
         var row = _changedRow;
 
         if (row == null) return;
@@ -207,11 +225,11 @@ internal static class FridgeStrengthPatch
     /// The table row of the powered fridge or freezer holding the item, or null when it is held by anything else. The
     /// game works out many items' spoil rates in one frame, so each holder is looked up once in that frame.
     /// </summary>
-    private static Config_Furniture? FridgeRowOf(ItemData item)
+    private static Config_Furniture? FridgeRowOf(ItemData item, int frame)
     {
         var owner = item._OwnerId_k__BackingField;
 
-        FridgesThisFrame.Use(UnityEngine.Time.frameCount);
+        FridgesThisFrame.Use(frame);
 
         if (FridgesThisFrame.TryGet(owner, out var known)) return known;
 
@@ -230,11 +248,50 @@ internal static class FridgeStrengthPatch
         return fridge;
     }
 
-    private static void ScaleShown(ref float coldRate)
+    /// <summary>The fridge talent's share, read from the game once a frame while no talent read is being hidden.</summary>
+    private static float FridgeTalent(int frame)
+    {
+        if (frame != _talentFrame)
+        {
+            _talent = ItemManager.GetTalentEffectRatio(FridgeTalentKey);
+            _talentFrame = frame;
+        }
+
+        return _talent;
+    }
+
+    /// <summary>The game's talent read inside a changed fridge's spoil rate call answers 0: the talent is in the rate already.</summary>
+    private static bool HideTalent(string effectConfigName, ref float __result)
+    {
+        if (!_hideTalent || effectConfigName != FridgeTalentKey) return true;
+
+        _hideTalent = false;
+        __result = 0f;
+
+        return false;
+    }
+
+    /// <summary>The panels' fridge rate has the talent in it already, so the strength goes on after it.</summary>
+    private static void ScaleShownRate(ref float __result)
     {
         try
         {
-            coldRate = Amounts.ColdRate(coldRate, _strength);
+            __result = Amounts.ColdRate(__result, _strength);
+        }
+        catch (Exception ex)
+        {
+            _failures.Report(ex);
+        }
+    }
+
+    /// <summary>The panels' preservation figure, worked out again from the strengthened rate.</summary>
+    private static void ScaleShownFigure(float coldRate, ref int __result)
+    {
+        try
+        {
+            if (_strength.IsGameAmount) return;
+
+            __result = FoodPreservationRules.GetDisplayPreservationRate(FridgeDisplayRules.GetEffectiveColdRate(coldRate));
         }
         catch (Exception ex)
         {

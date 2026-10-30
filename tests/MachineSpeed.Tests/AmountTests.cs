@@ -185,6 +185,30 @@ public class AmountsTests
         Assert.Equal(1f, Amounts.ColdRate(0.8f, Times(0.1f)));
     }
 
+    [Fact]
+    public void The_fridge_talent_takes_its_share_off_but_never_goes_under_a_tenth()
+    {
+        Assert.Equal(0.14f, Amounts.TalentColdRate(0.2f, 0.3f), 5);
+        Assert.Equal(Amounts.TalentFloor, Amounts.TalentColdRate(0.2f, 0.8f));
+        Assert.Equal(0.2f, Amounts.TalentColdRate(0.2f, 0f));
+    }
+
+    [Fact]
+    public void Strength_still_counts_once_the_player_has_the_fridge_talent()
+    {
+        // Strength 10 with a talent of 0.3: the talent makes 0.2 into 0.14, then strength 10 makes it 0.014.
+        Assert.Equal(0.014f, Amounts.FridgeRate(0.2f, 0.3f, Times(10f)), 5);
+        // The game's talent floor of a tenth would leave strength 100 at 10x; it reaches the coldest rate instead.
+        Assert.Equal(Amounts.ColdestRate, Amounts.FridgeRate(0.2f, 0.8f, Times(100f)));
+    }
+
+    [Fact]
+    public void Without_the_talent_a_fridge_rate_is_the_strength_alone()
+    {
+        Assert.Equal(Amounts.ColdRate(0.2f, Times(4f)), Amounts.FridgeRate(0.2f, 0f, Times(4f)));
+        Assert.Equal(Amounts.ColdRate(0.2f, Times(4f)), Amounts.FridgeRate(0.2f, float.NaN, Times(4f)));
+    }
+
     [Theory]
     [InlineData(1f)]
     [InlineData(1.5f)]
