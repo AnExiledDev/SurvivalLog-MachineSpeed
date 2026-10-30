@@ -2,6 +2,7 @@
 
 ## 0.8.1
 
+- **Warning:** install Power Manager to keep your generator settings. FuelBurn and GeneratorEfficiency are no longer in Machine Speed. Power Manager carries over your values the first time it starts.
 - Fridge Strength now keeps working once you have the fridge talent. The talent capped fridges at 10x, so a strength of 100 showed 500x early in a run and only 10x later. The talent's bonus now counts first and the strength goes on top.
 - Made for Survival Log 1.1.20151.
 
