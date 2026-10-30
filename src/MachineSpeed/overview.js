@@ -437,17 +437,22 @@
     return line;
   }
 
-  // The web view draws no hover tips, so a Rush the player cannot afford says why underneath it.
+  // The right-hand button: Rush on a running job, Collect on a finished dish or brew. The web view draws no hover
+  // tips, so a Rush the player cannot afford says why underneath it.
   function updateRush(cell, r) {
     var rush = r.rush;
-    var shown = rush ? r.key + '|' + rush.label + '|' + rush.cost + '|' + rush.ok + '|' + rush.tip + '|' + rush.why : '';
+    var shown = rush ? r.key + '|' + rush.label + '|' + rush.cost + '|' + rush.ok + '|' + rush.tip + '|' + rush.why : r.collect ? r.key + '|collect|' + r.collect : '';
 
     if (cell.getAttribute('data-shown') === shown) return;
 
     cell.setAttribute('data-shown', shown);
     cell.textContent = '';
 
-    if (!rush) return;
+    if (!rush) {
+      if (r.collect) cell.appendChild(button(r.collect, 'collect', r.kind + '|' + r.id, true, 'mso-rb'));
+
+      return;
+    }
 
     var node = button(rush.label, 'rush', r.kind + '|' + r.id, rush.ok, 'mso-rb');
     var cost = el('span', 'mso-cost');

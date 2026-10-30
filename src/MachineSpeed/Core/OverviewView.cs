@@ -91,6 +91,8 @@ public static class OverviewView
         Clock(json, OverviewTexts.Clock(row, settings.NowSeconds, settings.IsFinishClock, isChinese));
         json.Append(",\"rush\":");
         Rush(json, row, points, settings);
+        json.Append(',');
+        Field(json, "collect", Collecting.Can(row) ? OverviewTexts.CollectLabel.Pick(isChinese) : "");
         json.Append('}');
     }
 

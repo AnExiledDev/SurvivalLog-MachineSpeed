@@ -23,6 +23,7 @@ Each machine has its own speed. 2 means a job takes half the game time, 0.5 mean
 - **Amounts**: more output from the shredder, Ration Press, brewing, compost bins and harvests; bigger brews; faster robot charging; stronger fridges and freezers; and less wear on defense devices. See the Amounts section of [CONFIG.md](CONFIG.md).
 - **Machines window**: a Machines button in the tool column lists every machine at home with its picture, what it is making, the time left and when it finishes. Machines that need you are listed first with what to do, then working ones with a progress bar, then idle ones. The button shows how many machines are working and how many need you. Esc closes the window.
 - **Rush**: a Rush button in the Machines window finishes a running job now for survival points, 0.25 per game hour left by default, at least 1. Compost bins, plants, generators and paused jobs cannot be rushed.
+- **Collect**: a finished dish or brew has a Collect button in the Machines window. Your survivor walks to the stove or brewing barrel and takes it out, after whatever they are doing now. Other machines are emptied at the machine as usual.
 - **UI size**: with Exiled's Toolkit 0.10.0 or newer, its UI size setting (`UiScale`) draws the Machines window bigger or smaller, as far as the window still fits on the screen. The Machines button keeps the game's size. With Toolkit 0.11.0 or newer, Machine Speed's own `UiScale` under Interface sets a size for this mod alone; at 0, the default, it follows the Toolkit's.
 - **Done notices**: a notice pops up when a machine finishes, a drone comes back or a generator runs out of fuel.
 - **Finish clock**: `FinishClock` shows the game time a job finishes instead of the time left.
@@ -48,7 +49,7 @@ All settings are listed in [CONFIG.md](CONFIG.md).
 
 ## Requirements
 
-- Survival Log 1.1.19611. Built for this version; a game update can break it until the mod is updated.
+- Survival Log 1.1.20151. Built for this version; a game update can break it until the mod is updated.
 - The [BepInEx Pack for Survival Log](https://www.nexusmods.com/survivallog/mods/12), the BepInEx 6 (IL2CPP) build for the game.
 - [Exiled's Toolkit](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit) 0.11.0 or newer. Machine Speed does not load without it. It shows the done notices and Machine Speed's other messages as toasts, applies settings changed on the Mod Manager's Mods screen without a restart, and its UI size setting sizes the Machines window.
 - Optional: Day Length, for `FollowDayLength`.

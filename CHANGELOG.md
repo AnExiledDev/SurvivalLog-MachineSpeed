@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.0
+
+- New: a finished dish or brew has a Collect button in the Machines window. Your survivor walks to the stove or brewing barrel and takes it out, after whatever they are doing now.
+- Made for Survival Log 1.1.20151.
+
 ## 0.7.0
 
 - FuelBurn and GeneratorEfficiency moved to the new Power Manager mod. Power Manager carries over your values the first time it starts.

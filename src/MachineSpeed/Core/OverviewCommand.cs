@@ -28,6 +28,8 @@ public abstract record OverviewCommand
 
     public sealed record Rush(MachineKind Kind, long Id) : OverviewCommand;
 
+    public sealed record Collect(MachineKind Kind, long Id) : OverviewCommand;
+
     public static bool IsOurs(string? message) => message != null && message.StartsWith(Prefix, StringComparison.Ordinal);
 
     public static OverviewCommand? Parse(string? message)
@@ -49,6 +51,8 @@ public abstract record OverviewCommand
             ("timernoscript", 1) => new TimerNoScript(),
             ("rush", 3) when MachineKinds.TryParse(parts[1], out var kind) && long.TryParse(parts[2], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var id)
                 => new Rush(kind, id),
+            ("collect", 3) when MachineKinds.TryParse(parts[1], out var kind) && long.TryParse(parts[2], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var id)
+                => new Collect(kind, id),
             _ => null,
         };
     }

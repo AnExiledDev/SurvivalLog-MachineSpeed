@@ -17,6 +17,7 @@ internal sealed class OverviewSession
 
     private readonly MachineReader _reader;
     private readonly Rusher _rusher;
+    private readonly Collector _collector;
     private readonly OverviewPage _page;
     private readonly DoneToasts _toasts;
     private readonly DoneWatch _watch = new();
@@ -39,6 +40,7 @@ internal sealed class OverviewSession
     {
         _reader = reader;
         _rusher = new Rusher(reader, log);
+        _collector = new Collector(reader, log);
         _page = page;
         _toasts = new DoneToasts(AskToOpen, log);
         _log = log;
@@ -104,6 +106,7 @@ internal sealed class OverviewSession
             _log($"Machines window command {command} failed: {ex}");
 
             if (command is OverviewCommand.Rush) Say(OverviewTexts.RushFailed.Pick(IsChinese), ExiledToolkit.ToastKind.Error);
+            if (command is OverviewCommand.Collect) Say(OverviewTexts.CollectFailed.Pick(IsChinese), ExiledToolkit.ToastKind.Error);
         }
     }
 
@@ -131,6 +134,9 @@ internal sealed class OverviewSession
                 break;
             case OverviewCommand.Rush rush:
                 Rush(rush);
+                break;
+            case OverviewCommand.Collect collect:
+                Collect(collect);
                 break;
             default:
                 throw new InvalidOperationException("unhandled Machines window command " + command);
@@ -163,6 +169,15 @@ internal sealed class OverviewSession
         var outcome = _rusher.Rush(rush.Kind, rush.Id, _pointsPerHour, isChinese);
 
         Say(OverviewTexts.Describe(outcome, isChinese), ExiledToolkit.ToastKind.Info);
+        RefreshNow();
+    }
+
+    /// <summary>The window stays open, so several machines can be collected from in one go.</summary>
+    private void Collect(OverviewCommand.Collect collect)
+    {
+        var isChinese = IsChinese;
+
+        Say(OverviewTexts.Describe(_collector.Collect(collect.Kind, collect.Id, isChinese), isChinese), ExiledToolkit.ToastKind.Info);
         RefreshNow();
     }
 

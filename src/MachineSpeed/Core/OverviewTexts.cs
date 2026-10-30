@@ -70,6 +70,11 @@ public static class OverviewTexts
     public static readonly Phrase NotRushable = new("This machine cannot be rushed now", "此机器现在无法加速完成");
     public static readonly Phrase RushFailed = new("Rush failed, nothing was spent", "加速完成失败，未花费生存点");
 
+    public static readonly Phrase CollectLabel = new("Collect", "收取");
+    public static readonly Phrase CollectQueued = new("Going to collect from {0}", "前往「{0}」收取");
+    public static readonly Phrase NothingToCollect = new("Nothing to collect here now", "这台机器现在没有可收取的东西");
+    public static readonly Phrase CollectFailed = new("Could not send your survivor to collect", "无法前往收取");
+
     public static readonly Phrase ToastSource = new("Machine Speed", "机器加速");
 
     /// <summary>What to call a machine whose own name could not be read.</summary>
@@ -156,6 +161,14 @@ public static class OverviewTexts
         RushOutcome.TooFew => TooFewPoints.Pick(isChinese),
         RushOutcome.NotRushable => NotRushable.Pick(isChinese),
         RushOutcome.Failed => RushFailed.Pick(isChinese),
+        _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome, null),
+    };
+
+    public static string Describe(CollectOutcome outcome, bool isChinese) => outcome switch
+    {
+        CollectOutcome.Queued queued => CollectQueued.Say(isChinese, queued.Name),
+        CollectOutcome.NotReady => NothingToCollect.Pick(isChinese),
+        CollectOutcome.Failed => CollectFailed.Pick(isChinese),
         _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome, null),
     };
 

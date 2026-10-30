@@ -190,6 +190,7 @@ public class OverviewCommandTests
         Assert.IsType<OverviewCommand.NoScript>(OverviewCommand.Parse("slmod|machinespeed|noscript"));
         Assert.Equal(new OverviewCommand.Rush(MachineKind.RationPress, 42), OverviewCommand.Parse("slmod|machinespeed|rush|press|42"));
         Assert.Equal(new OverviewCommand.Note("a|b"), OverviewCommand.Parse("slmod|machinespeed|diag|a|b"));
+        Assert.Equal(new OverviewCommand.Collect(MachineKind.Cooking, 42), OverviewCommand.Parse("slmod|machinespeed|collect|cook|42"));
     }
 
     [Fact]
@@ -200,6 +201,8 @@ public class OverviewCommandTests
         Assert.Null(OverviewCommand.Parse("slmod|machinespeed|rush|oven|42"));
         Assert.Null(OverviewCommand.Parse("slmod|machinespeed|rush|press|x"));
         Assert.Null(OverviewCommand.Parse("slmod|machinespeed|toggle|extra"));
+        Assert.Null(OverviewCommand.Parse("slmod|machinespeed|collect|cook"));
+        Assert.Null(OverviewCommand.Parse("slmod|machinespeed|collect|oven|42"));
     }
 }
 
@@ -459,6 +462,35 @@ public class OverviewViewTests
     }
 
     private static MachineRow Brew(double remain) => new(MachineKind.Brewing, 7, "Barrel", null, MachineState.Running, remain, CanRush: true);
+
+    [Fact]
+    public void A_finished_dish_or_brew_has_a_collect_button()
+    {
+        Assert.Contains("\"collect\":\"Collect\"", View(Finished(MachineKind.Cooking), points: 0));
+        Assert.Contains("\"collect\":\"Collect\"", View(Finished(MachineKind.Brewing), points: 0));
+        Assert.Contains("\"collect\":\"收取\"", View(Finished(MachineKind.Cooking), points: 0, English with { IsChinese = true }));
+    }
+
+    // The game queues a walk-and-take-out only for a stove and a brewing barrel; the others are emptied in their panels.
+    [Fact]
+    public void Only_a_finished_dish_or_brew_can_be_collected()
+    {
+        Assert.Contains("\"collect\":\"\"", View(Brew(remain: 3600), points: 0));
+        Assert.Contains("\"collect\":\"\"", View(Finished(MachineKind.Shredder), points: 0));
+        Assert.Contains("\"collect\":\"\"", View(Finished(MachineKind.DyeVat), points: 0));
+        Assert.Contains("\"collect\":\"\"", View(Finished(MachineKind.Drone), points: 0));
+        Assert.Contains("\"collect\":\"\"", View(Finished(MachineKind.Plants), points: 0));
+    }
+
+    [Fact]
+    public void A_collect_press_says_where_the_survivor_is_going_or_why_not()
+    {
+        Assert.Equal("Going to collect from Stove", OverviewTexts.Describe(new CollectOutcome.Queued("Stove"), isChinese: false));
+        Assert.Equal("前往「Stove」收取", OverviewTexts.Describe(new CollectOutcome.Queued("Stove"), isChinese: true));
+        Assert.Equal("Nothing to collect here now", OverviewTexts.Describe(new CollectOutcome.NotReady(), isChinese: false));
+    }
+
+    private static MachineRow Finished(MachineKind kind) => new(kind, 5, "", null, MachineState.Finished, null, CanRush: false);
 
     private static string View(MachineRow row, int? points, ViewSettings? settings = null) => OverviewView.Write(new MachineRead.Home(new[] { row }, points), settings ?? English);
 }
