@@ -1,8 +1,8 @@
 // Machine Speed's Machines window. Runs in Root.html, the document every game page iframe sits in. Draws the window
 // over all of them in the gold style the other hub windows share, and puts a button with a
 // working and needs-you counts in the HUD's tool column, built like the game's own buttons there. Every word and number comes from the
-// plugin (OverviewView.cs); this script only draws them. Talks to the plugin through
-// vuplex.postMessage("slmod|machinespeed|<verb>") and is driven by window.__slmachineoverview.
+// plugin (OverviewView.cs); this script only draws them. Talks to the plugin through Exiled's Toolkit's page API
+// ("slmod|machinespeed|<verb>") and is driven by window.__slmachineoverview.
 (function () {
   if (window.__slmachineoverview) return;
 
@@ -11,6 +11,8 @@
   var HUD_STYLE_ID = 'mso-hud-style';
   // The Machines button's place in the HUD's tool column when Exiled's Toolkit lays it out in columns of four.
   var DOCK_ORDER = '50';
+  // The name the window is handed to the Toolkit's UI size with, so Machine Speed's own UiScale setting sizes it.
+  var UI_SIZE_NAME = 'MachineSpeed';
   var BUSY_TIMEOUT_MS = 5000;
   var SVG_NS = 'http://www.w3.org/2000/svg';
   var CLOSE_MARK = String.fromCharCode(215);
@@ -23,21 +25,23 @@
   var rowNodes = [];
   var isBusy = false;
   var busyTimer = 0;
-  // The HUD button as placed: its iframe, document, column and the parts that change, so a check or a new count
-  // touches only those.
-  var hud = null;
-  var isHudCleared = false;
-  var hasReportedPageAccess = false;
   var hasReportedHudPlaced = false;
+
+  // The Toolkit's page API (window.ExiledToolkit). The game can run its script after this one, so this stays null
+  // until it has; the HUD button and the messages to the plugin start then.
+  var etk = null;
+  // The Machines button in the HUD's tool column. The Toolkit keeps it there and writes changes into it in place.
+  var hud = null;
+  // Every button the Toolkit has put in a HUD page, each carrying this script's working count badge.
+  var hudNodes = [];
 
   function emptyData() {
     return { title: 'Machines', atHome: '', needYou: '', points: '', pointsLabel: '', needsTitle: '', workingTitle: '', idleTitle: '', toClose: '', note: '', rows: [] };
   }
 
+  // Through the Toolkit's bridge. Nothing goes before its page API is there; the page says it is ready once it is.
   function send(message) {
-    try {
-      if (window.vuplex) window.vuplex.postMessage(PREFIX + message);
-    } catch (e) {}
+    if (etk) etk.send(PREFIX, message);
   }
 
   // One press at a time: a double click would otherwise rush twice. Every press is answered by a status line, which
@@ -146,7 +150,6 @@
   function build() {
     if (ui && ui.root.isConnected) return;
 
-    addStyle();
     shownKeys = '';
 
     var root = el('div');
@@ -185,41 +188,21 @@
     root.appendChild(plate);
 
     document.body.appendChild(root);
-    // Drawn at the player's UI size (Exiled's Toolkit). The full-screen mask always fills the screen, so the window on
-    // it is what must fit.
-    uiSize(root, { fit: plate });
-
     root.addEventListener('click', onClick);
     // Clicks inside the window must not reach the game pages underneath; the mask itself closes nothing on purpose.
     root.addEventListener('mousedown', function (e) { e.stopPropagation(); });
 
-    ui = { root: root, title: titleText, sub: sub, have: have, points: points, pointsLabel: pointsLabel, list: list, status: status, toClose: toClose };
+    ui = { root: root, plate: plate, title: titleText, sub: sub, have: have, points: points, pointsLabel: pointsLabel, list: list, status: status, toClose: toClose };
+
+    if (etk) dressWindow();
   }
 
-  // Hands a panel to Exiled's Toolkit to be drawn at the player's UI size. Before the Toolkit's script has loaded it
-  // waits in a list the Toolkit reads; without the Toolkit nothing happens.
-  function uiSize(node, options) {
-    options = Object.assign({ mod: 'MachineSpeed' }, options);
-    var toolkit = window.ExiledUi;
-
-    if (toolkit) {
-      toolkit.size(node, options);
-      return;
-    }
-
-    var waiting = window.__exiledUiWait = window.__exiledUiWait || [];
-    waiting.push([node, options]);
-    if (waiting.length > 32) waiting.shift();
-  }
-
-  // The style outlives a lost window root, so a rebuild must not stack another copy of it.
-  function addStyle() {
-    if (document.getElementById('mso-style')) return;
-
-    var style = el('style');
-    style.id = 'mso-style';
-    style.textContent = CSS;
-    document.head.appendChild(style);
+  // The window's style, and the player's UI size from the Toolkit. The full-screen mask always fills the screen, so the
+  // window on it is what must fit. A window drawn before the Toolkit arrived gets both when it does; the style outlives
+  // a lost window root, and the Toolkit adds it only once.
+  function dressWindow() {
+    etk.addStyle(document, 'mso-style', CSS);
+    etk.size(ui.root, { mod: UI_SIZE_NAME, fit: ui.plate });
   }
 
   function onClick(e) {
@@ -526,15 +509,8 @@
     state.isLive = !!isLive;
     state.title = title || 'Machines';
     state.tip = tip || '';
-    isHudCleared = false;
 
-    if (state.isLive && isHudIntact()) {
-      updateHudTip();
-
-      return;
-    }
-
-    patchPagesSafely();
+    if (hud) hud.update({ shown: state.isLive, title: state.title, tip: state.tip });
   }
 
   // The HUD button's counts: machines working (bottom corner) and machines that need the player (top corner). A button
@@ -543,13 +519,11 @@
     state.working = Math.max(0, working | 0);
     state.needs = Math.max(0, needs | 0);
 
-    if (state.isLive && isHudIntact()) {
-      updateHudCounts();
+    if (!hud) return;
 
-      return;
-    }
-
-    patchPagesSafely();
+    hud.update({ badge: state.needs });
+    hudNodes = hudNodes.filter(function (node) { return node.isConnected; });
+    hudNodes.forEach(drawWorking);
   }
 
   // ---------- HUD button ----------
@@ -561,138 +535,39 @@
     '.mso-hud-btn .mso-hud-working{bottom:-6px;background:#1c1f1a;color:#e8d9a8;border:1px solid rgba(232,184,74,.55);line-height:16px}'
   ].join('\n');
 
-  // The HUD is a same-origin iframe, so its document can be reached from here; polled because the game creates and
-  // drops that iframe whenever it likes. A button still in place in the same document is the usual case and returns
-  // without looking anything up.
-  function patchPages() {
-    if (state.isLive ? isHudIntact() : isHudCleared) return;
+  // The Toolkit draws the needs count as the button's badge. The working count is a second badge it has no room for,
+  // so it is added here each time the Toolkit puts the button into a HUD page. This style goes in after the Toolkit's
+  // own, so the two badges keep their colours and corners.
+  function onHudPlaced(node, doc) {
+    etk.addStyle(doc, HUD_STYLE_ID, HUD_CSS);
 
-    hud = null;
-
-    var frames = document.querySelectorAll('iframe');
-
-    for (var i = 0; i < frames.length; i++) {
-      var src = frames[i].src || '';
-
-      if (!/CoreUI1\.html/.test(src)) continue;
-
-      var doc = null;
-
-      try {
-        doc = frames[i].contentDocument;
-      } catch (e) {}
-
-      if (!doc) {
-        if (!hasReportedPageAccess) send('diag|cannot reach the HUD document (root ' + location.protocol + ', iframe ' + src + ')');
-        hasReportedPageAccess = true;
-        continue;
-      }
-
-      placeHudButton(frames[i], doc);
+    if (!node.__msoWorking) {
+      node.__msoWorking = doc.createElement('span');
+      node.__msoWorking.className = 'mso-hud-badge mso-hud-working';
     }
 
-    // With no game loaded the button is only ever taken out, so one whole sweep is enough until the next live().
-    isHudCleared = !state.isLive;
-  }
+    if (hudNodes.indexOf(node) < 0) hudNodes.push(node);
 
-  function isHudIntact() {
-    try {
-      return hud !== null && hud.frame.isConnected && hud.frame.contentDocument === hud.doc && hud.column.isConnected && hud.node.parentNode === hud.column;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  function patchPagesSafely() {
-    try {
-      patchPages();
-    } catch (e) {}
-  }
-
-  // First in the tool column: the column is anchored at the bottom, so the first child sits on top and the game's own
-  // buttons do not move. The column hides itself in build mode, and the button with it.
-  // Any button already there (from an earlier copy of this script, or left in the wrong place) is taken out first, so
-  // there is never more than one.
-  function placeHudButton(frame, doc) {
-    var column = doc.querySelector('.vertical-tools');
-    var strays = doc.querySelectorAll('.' + HUD_CLASS);
-
-    for (var i = 0; i < strays.length; i++) strays[i].remove();
-
-    if (!column || !state.isLive) return;
-
-    addHudStyle(doc);
-    var node = hudButton(doc);
-
-    node.setAttribute('data-etk-dock', DOCK_ORDER);
-    hud = { frame: frame, doc: doc, column: column, node: node, tip: node.lastChild, needs: null, working: null };
-    updateHudCounts();
-    column.insertBefore(node, column.firstChild);
+    drawWorking(node);
 
     if (!hasReportedHudPlaced) send('diag|HUD button placed in the tool column');
+
     hasReportedHudPlaced = true;
   }
 
-  function addHudStyle(doc) {
-    if (doc.getElementById(HUD_STYLE_ID)) return;
+  // A count of 0 has no badge. It sits before the tip, beside the needs badge.
+  function drawWorking(node) {
+    var badge = node.__msoWorking;
+    var text = state.working > 99 ? '99+' : String(state.working);
 
-    var style = doc.createElement('style');
-    style.id = HUD_STYLE_ID;
-    style.textContent = HUD_CSS;
-    (doc.head || doc.body).appendChild(style);
-  }
+    if (state.working <= 0) {
+      if (badge.parentNode) badge.parentNode.removeChild(badge);
 
-  // The same markup as the game's bag button: its classes, an svg icon, and the hover tip its stylesheet shows. The
-  // HUD page watches its body for new buttons and tells the game where they are, so a click on this one reaches it.
-  function hudButton(doc) {
-    var node = doc.createElement('button');
-    node.className = 'ui-btn icon-sq interactive-btn has-entry-tip ' + HUD_CLASS;
-    node.setAttribute('data-interactive', '');
-    node.appendChild(gear(doc));
-    node.appendChild(entryTip(doc));
-    node.addEventListener('click', function (e) {
-      e.stopPropagation();
-      send('toggle');
-    });
-
-    return node;
-  }
-
-  // Counts sit between the gear and the tip, needs first. A count of 0 has no badge.
-  function updateHudCounts() {
-    hud.needs = setCount(hud.needs, 'mso-hud-needs', state.needs, hud.working || hud.tip);
-    hud.working = setCount(hud.working, 'mso-hud-working', state.working, hud.tip);
-  }
-
-  function setCount(badge, className, count, before) {
-    if (count <= 0) {
-      if (badge) badge.remove();
-
-      return null;
+      return;
     }
 
-    var text = count > 99 ? '99+' : String(count);
-
-    if (!badge) {
-      badge = hud.doc.createElement('span');
-      badge.className = 'mso-hud-badge ' + className;
-      badge.appendChild(hud.doc.createTextNode(text));
-      hud.node.insertBefore(badge, before);
-
-      return badge;
-    }
-
-    if (badge.firstChild.nodeValue !== text) badge.firstChild.nodeValue = text;
-
-    return badge;
-  }
-
-  function updateHudTip() {
-    var title = hud.tip.children[0];
-    var body = hud.tip.children[1];
-
-    if (title.textContent !== state.title) title.textContent = state.title;
-    if (body.textContent !== state.tip) body.textContent = state.tip;
+    if (badge.textContent !== text) badge.textContent = text;
+    if (badge.parentNode !== node) node.insertBefore(badge, node.querySelector('.entry-tip'));
   }
 
   function gear(doc) {
@@ -707,24 +582,21 @@
     return svg;
   }
 
-  function entryTip(doc) {
-    var tip = doc.createElement('div');
-    var title = doc.createElement('div');
-    var body = doc.createElement('div');
+  // Runs once the Toolkit's page API is there: at once when its script ran first, else when it runs.
+  function startWithToolkit(api) {
+    etk = api;
 
-    tip.className = 'entry-tip';
-    title.className = 'entry-tip-title';
-    title.textContent = state.title;
-    body.className = 'entry-tip-body';
-    body.textContent = state.tip;
-    tip.appendChild(title);
-    tip.appendChild(body);
+    if (ui) dressWindow();
 
-    return tip;
+    hud = etk.addHudButton({
+      id: HUD_CLASS, order: DOCK_ORDER, icon: GEAR_PATH, title: state.title, tip: state.tip, shown: state.isLive,
+      badge: state.needs, badgeClass: 'mso-hud-badge mso-hud-needs',
+      onClick: function () { send('toggle'); },
+      onPlace: onHudPlaced
+    });
+    send('ready');
   }
 
-  setInterval(patchPagesSafely, 400);
-
   window.__slmachineoverview = { open: open, setData: setData, close: close, status: status, live: live, badge: badge };
-  send('ready');
+  (window.ExiledToolkitReady = window.ExiledToolkitReady || []).push(startWithToolkit);
 })();

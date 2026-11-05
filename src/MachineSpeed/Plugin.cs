@@ -3,6 +3,9 @@ using System.IO;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Unity.IL2CPP;
+using ExiledToolkit;
+using ExiledToolkit.Game;
+using ExiledToolkit.Kit;
 using HarmonyLib;
 using MachineSpeed.Adapters;
 using MachineSpeed.Core;
@@ -11,24 +14,33 @@ using static MachineSpeed.Adapters.WorldRule;
 namespace MachineSpeed;
 
 [BepInPlugin(Guid, "Machine Speed", Version)]
-[BepInDependency(OptionalLive.ToolkitGuid, OptionalLive.ToolkitVersion)]
+[BepInDependency(ToolkitGuid, ToolkitVersion)]
 [BepInDependency(DayLengthWorld.DayLengthGuid, BepInDependency.DependencyFlags.SoftDependency)]
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.machinespeed";
-    private const string Version = "0.9.0";
+    private const string Version = "0.9.1";
     private const string Section = "Machines";
     private const string ActionSpeedConfig = "com.dev.survivallog.actionspeed.cfg";
+
+    /// <summary>Exiled's Toolkit: its shared helpers, toasts, live settings and UI size all come from it.</summary>
+    private const string ToolkitGuid = "com.dev.survivallog.exiledtoolkit";
+    private const string ToolkitVersion = ">=0.19.0";
+
+    private const string LogFileName = "machine-speed.log";
+
+    /// <summary>Past this the log file is moved to machine-speed.log.1 and started again.</summary>
+    private const long MaxLogBytes = 1024 * 1024;
+
+    /// <summary>The name the page script hands its window to the Toolkit's UI size with.</summary>
+    private const string UiSizeName = "MachineSpeed";
 
     private const string Range = "From 0.25 to 100000: 1 is the game's pace, 2 is twice as fast, a very high number makes it almost instant. 0 or less counts as 1.";
     private const string RangeChinese = "范围 0.25 到 100000：1 为游戏原速，2 为两倍速，数值很大时几乎立即完成。0 或更小按 1 计算。";
 
     public override void Load()
     {
-        var log = new SpeedLog(Log, Path.Combine(Paths.BepInExRootPath, "machine-speed.log"));
-
-        log.TrimIfLarge();
-
+        var log = new ModLog(Log, LogFileName) { MaxFileBytes = MaxLogBytes };
         var isFirstStart = !ReadsAs(Config.ConfigFilePath, text => ConfigText.HasSection(text, Section), log.Write);
         var shredder = Bind("Shredder", "the shredder.", "粉碎机的速度。");
         var rationPress = Bind("RationPress", "the Ration Press.", "口粮压制机的速度。");
@@ -38,7 +50,7 @@ public sealed class Plugin : BasePlugin
         var brewing = Bind("Brewing", "brewing alcohol.", "酿酒的速度。");
         var cooking = Bind("Cooking", "cooking at a stove or hot pot.", "在燃气灶或火锅上烹饪的速度。");
         var compost = Bind("Compost", "compost bins turning food into compost.", "堆肥箱把食物变成堆肥的速度。");
-        OptionalUiSize.Bind(Config);
+        ModUiSize.Bind(Config, UiSizeName);
 
         var cookingFuel = Config.Bind(Section, "CookingFuel", 1f, Rule(
             "How much fuel a stove or hot pot uses for each dish, whatever the cooking speed: 1 is the game's amount, 0.5 is half, 0 uses none, 2 is twice as much. From 0 to 20; less than 0 counts as 1.\n" +
@@ -55,26 +67,26 @@ public sealed class Plugin : BasePlugin
 
         if (isFirstStart) ImportFromActionSpeed(brewing, cooking, log.Write);
 
-        var harmony = new Harmony(Guid);
+        var hooks = new PatchKit(new Harmony(Guid), log.Write);
 
         log.Write($"===== Machine Speed {Version} started");
-        ShredderPatch.Apply(harmony, log);
-        RationPressPatch.Apply(harmony, log);
-        PlantGrowthPatch.Apply(harmony, log);
-        DroneTripPatch.Apply(harmony, log);
-        CookingPatch.Apply(harmony, log);
-        CookingFuelPatch.Apply(harmony, log);
-        BrewingPatch.Apply(harmony, log);
-        DyeVatPatch.Apply(harmony, log);
+        ShredderPatch.Apply(hooks, log);
+        RationPressPatch.Apply(hooks, log);
+        PlantGrowthPatch.Apply(hooks, log);
+        DroneTripPatch.Apply(hooks, log);
+        CookingPatch.Apply(hooks, log);
+        CookingFuelPatch.Apply(hooks, log);
+        BrewingPatch.Apply(hooks, log);
+        DyeVatPatch.Apply(hooks, log);
         CompostPatch.Apply(log);
-        ShredderAutoStart.Apply(harmony, log);
-        AmountPatches.Apply(this, harmony, log);
-        HourJobs.UseLog(log);
-        TimerPage.UseLog(log);
+        ShredderAutoStart.Apply(hooks, log);
+        AmountPatches.Apply(this, hooks, log);
+        HourJobs.ReportFailuresTo(hooks);
+        TimerPage.Start(log);
 
         var speeds = new PlannedSpeeds(preset, log.Write);
 
-        DayLengthWorld.Apply(harmony, log, speeds.Reapply);
+        DayLengthWorld.Apply(hooks, log, speeds.Reapply);
         speeds.Watch(shredder, ShredderPatch.Use);
         speeds.Watch(rationPress, RationPressPatch.Use);
         speeds.Watch(plantGrowth, PlantGrowthPatch.Use);
@@ -92,9 +104,9 @@ public sealed class Plugin : BasePlugin
             CookingPatch.Use(cookingSpeed);
             CookingFuelPatch.Use(cookingSpeed, fuel);
         }, cooking, cookingFuel);
-        OptionalLive.Watch(followDayLength, DayLengthWorld.Use);
-        OptionalLive.Watch(shredderAutoStart, ShredderAutoStart.Use);
-        Overview.Install(this, Config, harmony, log);
+        LiveSettings.Watch(followDayLength, DayLengthWorld.Use);
+        LiveSettings.Watch(shredderAutoStart, ShredderAutoStart.Use);
+        Overview.Install(this, Config, hooks, log);
         StartClock(log);
     }
 
@@ -102,7 +114,7 @@ public sealed class Plugin : BasePlugin
     /// Brewing, dyeing and compost are moved along a few times a second by a ticker. It runs even with all three at the
     /// game's pace, so speeding one up later needs no restart; with nothing tracked, a tick does nothing.
     /// </summary>
-    private void StartClock(SpeedLog log)
+    private void StartClock(ModLog log)
     {
         try
         {

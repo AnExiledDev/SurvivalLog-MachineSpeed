@@ -1,7 +1,7 @@
 using System;
+using ExiledToolkit.Game;
 using GameCore.HotUpdate.Battle.Logic;
 using GameCore.HotUpdate.Battle.Show;
-using HarmonyLib;
 using MachineSpeed.Core;
 
 namespace MachineSpeed.Adapters;
@@ -17,19 +17,13 @@ internal static class FinishClockHeadBar
 
     private static bool _isOn;
     private static bool _isPatched;
-    private static Harmony? _harmony;
-    private static Action<string> _log = _ => { };
-    private static readonly DistinctFailures Failures = new();
+    private static PatchKit? _hooks;
 
     /// <summary>
     /// The hook goes in the first time the setting is on, not at start: the game updates these timers for every plant,
     /// barrel and vat, and a player who never turns the finish clock on should not pay for a hook that does nothing.
     /// </summary>
-    public static void Apply(Harmony harmony, SpeedLog log)
-    {
-        _harmony = harmony;
-        _log = log.Write;
-    }
+    public static void Apply(PatchKit hooks) => _hooks = hooks;
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>
     public static void Use(bool isOn)
@@ -43,20 +37,8 @@ internal static class FinishClockHeadBar
     {
         _isPatched = true;
 
-        if (_harmony == null) return;
-
-        try
-        {
-            _harmony.Patch(
-                AccessTools.Method(typeof(FurnitureHeadBar), "UpdatePlantTimeText"),
-                prefix: new HarmonyMethod(typeof(FinishClockHeadBar), nameof(Before)),
-                postfix: new HarmonyMethod(typeof(FinishClockHeadBar), nameof(After)));
-            _log("timers over machines can show their finish time");
-        }
-        catch (Exception ex)
-        {
-            _log($"could not hook FurnitureHeadBar.UpdatePlantTimeText, timers over machines keep showing time left: {ex.Message}");
-        }
+        _hooks?.Patch(typeof(FinishClockHeadBar), typeof(FurnitureHeadBar), "UpdatePlantTimeText", prefix: nameof(Before), postfix: nameof(After),
+            done: "timers over machines can show their finish time", consequence: "timers over machines keep showing time left");
     }
 
     private static void Before(FurnitureHeadBar __instance, out int __state)
@@ -94,8 +76,5 @@ internal static class FinishClockHeadBar
         }
     }
 
-    private static void Report(Exception ex)
-    {
-        if (Failures.IsNew($"{ex.GetType().FullName}: {ex.Message}")) _log($"showing a finish time over a machine failed, it shows time left: {ex}");
-    }
+    private static void Report(Exception ex) => _hooks?.Fail("showing a finish time over a machine, it shows time left", ex);
 }

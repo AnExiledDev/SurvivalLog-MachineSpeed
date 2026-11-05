@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BepInEx.Configuration;
+using ExiledToolkit;
 using MachineSpeed.Core;
 
 namespace MachineSpeed.Adapters;
@@ -33,7 +34,7 @@ internal sealed class PlannedSpeeds
         entries.CopyTo(watched, 0);
         watched[^1] = _preset;
         _applies.Add(apply);
-        OptionalLive.Watch(apply, watched);
+        LiveSettings.Watch(apply, watched);
     }
 
     /// <summary>The speed a machine runs at now.</summary>

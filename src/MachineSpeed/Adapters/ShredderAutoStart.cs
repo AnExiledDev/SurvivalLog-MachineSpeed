@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
+using ExiledToolkit.Game;
+using ExiledToolkit.Kit;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
-using HarmonyLib;
 using MachineSpeed.Core;
 
 namespace MachineSpeed.Adapters;
@@ -17,17 +18,18 @@ internal static class ShredderAutoStart
 {
     private static readonly Dictionary<long, int> HopperCounts = new();
 
-    private static Harmony? _harmony;
-    private static SpeedLog? _log;
-    private static HookFailures _failures = HookFailures.Silent;
+    private static PatchKit? _hooks;
+    private static ModLog? _log;
+    private static Action<Exception> _fail = _ => { };
     private static FirstUse _first = FirstUse.Silent;
     private static bool _isOn;
     private static bool _isHooked;
 
-    public static void Apply(Harmony harmony, SpeedLog log)
+    public static void Apply(PatchKit hooks, ModLog log)
     {
-        (_harmony, _log) = (harmony, log);
-        (_failures, _first) = (new HookFailures(log.Write, "starting a refilled shredder", "Start button"), new FirstUse(log.WriteFileOnly));
+        (_hooks, _log) = (hooks, log);
+        _fail = ex => hooks.Fail("starting a refilled shredder, it keeps the game's Start button", ex);
+        _first = new FirstUse(log.WriteFileOnly);
     }
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>
@@ -42,13 +44,13 @@ internal static class ShredderAutoStart
 
     private static void Hook()
     {
-        if (_harmony == null) return;
+        if (_hooks == null) return;
 
         try
         {
-            _harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.BuildShredderPanelData)), postfix: Machine.Patch(typeof(ShredderAutoStart), nameof(RememberCount)));
-            _harmony.Patch(Machine.Method(typeof(Furniture), "OnShredderHopperChanged"), prefix: Machine.Patch(typeof(ShredderAutoStart), nameof(BeforeChange)),
-                postfix: Machine.Patch(typeof(ShredderAutoStart), nameof(AfterChange)));
+            _hooks.PatchOrThrow(typeof(ShredderAutoStart), typeof(Furniture), nameof(Furniture.BuildShredderPanelData), postfix: nameof(RememberCount));
+            _hooks.PatchOrThrow(typeof(ShredderAutoStart), typeof(Furniture), "OnShredderHopperChanged", prefix: nameof(BeforeChange),
+                postfix: nameof(AfterChange));
             _isHooked = true;
         }
         catch (Exception ex)
@@ -66,7 +68,7 @@ internal static class ShredderAutoStart
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 
@@ -80,7 +82,7 @@ internal static class ShredderAutoStart
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 
@@ -101,7 +103,7 @@ internal static class ShredderAutoStart
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 }

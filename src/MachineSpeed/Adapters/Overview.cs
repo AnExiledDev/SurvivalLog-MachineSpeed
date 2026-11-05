@@ -1,7 +1,10 @@
 using System;
 using BepInEx.Configuration;
 using BepInEx.Unity.IL2CPP;
-using HarmonyLib;
+using ExiledToolkit;
+using ExiledToolkit.Game;
+using ExiledToolkit.Kit;
+using ExiledToolkit.Web;
 using MachineSpeed.Core;
 using static MachineSpeed.Adapters.WorldRule;
 
@@ -16,7 +19,7 @@ internal static class Overview
 {
     private const string Section = "Overview";
 
-    public static void Install(BasePlugin plugin, ConfigFile config, Harmony harmony, SpeedLog log)
+    public static void Install(BasePlugin plugin, ConfigFile config, PatchKit hooks, ModLog log)
     {
         var toasts = config.Bind(Section, "Toasts", true,
             "Show a notice when a machine finishes, a drone comes back or a fuel generator runs out of fuel. Clicking it opens the Machines window.\n" +
@@ -27,12 +30,10 @@ internal static class Overview
         var finishClock = config.Bind(Section, "FinishClock", false,
             "Show the game time a job will be done instead of the time it has left, in the Machines window and in the timers over plants, brewing barrels and dye vats.\n" +
             "在「机器总览」窗口以及植物、酿酒桶和染料桶上方的计时中，显示任务完成时的游戏时间，而不是剩余时间。");
-        var session = new OverviewSession(new MachineReader(log.Write), new OverviewPage(log.Write), log.Write);
+        var session = new OverviewSession(new MachineReader(log.Write), new OverviewPage(log.Write), PageInbox.Listen(OverviewCommand.Prefix), log.Write);
 
-        OverviewInputGate.Apply(harmony, log.Write);
-        OverviewMessages.Apply(harmony, log.Write);
-        FinishClockHeadBar.Apply(harmony, log);
-        OptionalLive.Watch(() =>
+        FinishClockHeadBar.Apply(hooks);
+        LiveSettings.Watch(() =>
         {
             session.UseSettings(toasts.Value, rushPointsPerHour.Value, finishClock.Value);
             FinishClockHeadBar.Use(finishClock.Value);

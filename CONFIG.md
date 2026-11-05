@@ -57,4 +57,4 @@ The Machines button in the tool column opens a window with every machine at home
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `UiScale` | `0` | How big Machine Speed's own windows, panels and messages are drawn, in percent, from 75 to 200. At `0` they follow the UI size set in Exiled's Toolkit (its `UiScale`). Needs Exiled's Toolkit 0.11.0 or newer. |
+| `UiScale` | `0` | How big Machine Speed's own windows, panels and messages are drawn, in percent, from 75 to 200. At `0` they follow the UI size set in Exiled's Toolkit (its `UiScale`). |

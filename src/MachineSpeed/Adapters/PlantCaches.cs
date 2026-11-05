@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using ExiledToolkit.Game;
+using ExiledToolkit.Kit;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
 using MachineSpeed.Core;
@@ -15,7 +17,7 @@ internal static class PlantCaches
     private static readonly Dictionary<long, float> CheckedAtSpeed = new();
     private static FirstUse _first = FirstUse.Silent;
 
-    public static void UseLog(SpeedLog log) => _first = new FirstUse(log.WriteFileOnly);
+    public static void UseLog(ModLog log) => _first = new FirstUse(log.WriteFileOnly);
 
     public static void Forget() => CheckedAtSpeed.Clear();
 

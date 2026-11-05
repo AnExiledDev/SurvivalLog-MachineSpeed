@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ExiledToolkit.Game;
+using ExiledToolkit.Kit;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
 using GameCore.HotUpdate.ReduxUI;
-using HarmonyLib;
 using MachineSpeed.Core;
 
 namespace MachineSpeed.Adapters;
@@ -21,14 +22,15 @@ internal static class BarrelCapacityPatch
 
     private static Multiplier _capacity = Multiplier.GameAmount;
     private static AmountHook? _hook;
-    private static HookFailures _failures = HookFailures.Silent;
+    private static Action<Exception> _fail = _ => { };
     private static FirstUse _first = FirstUse.Silent;
 
-    public static void Apply(Harmony harmony, SpeedLog log)
+    public static void Apply(PatchKit hooks, ModLog log)
     {
-        (_failures, _first) = (new HookFailures(log.Write, "changing the barrel capacity", "amount"), new FirstUse(log.WriteFileOnly));
+        _fail = ex => hooks.Fail("changing the barrel capacity, it keeps the game's amount", ex);
+        _first = new FirstUse(log.WriteFileOnly);
         _hook = new AmountHook(log, "barrel capacity", () =>
-            harmony.Patch(Machine.Method(typeof(Furniture), "GetBrewSetting"), postfix: Machine.Patch(typeof(BarrelCapacityPatch), nameof(ScaleLimit))));
+            hooks.PatchOrThrow(typeof(BarrelCapacityPatch), typeof(Furniture), "GetBrewSetting", postfix: nameof(ScaleLimit)));
     }
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>
@@ -53,7 +55,7 @@ internal static class BarrelCapacityPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 }
@@ -69,16 +71,17 @@ internal static class RobotChargingPatch
 
     private static Multiplier _charging = Multiplier.GameAmount;
     private static AmountHook? _hook;
-    private static HookFailures _failures = HookFailures.Silent;
+    private static Action<Exception> _fail = _ => { };
     private static FirstUse _first = FirstUse.Silent;
 
-    public static void Apply(Harmony harmony, SpeedLog log)
+    public static void Apply(PatchKit hooks, ModLog log)
     {
-        (_failures, _first) = (new HookFailures(log.Write, "changing robot charging", "rate"), new FirstUse(log.WriteFileOnly));
+        _fail = ex => hooks.Fail("changing robot charging, it keeps the game's rate", ex);
+        _first = new FirstUse(log.WriteFileOnly);
         _hook = new AmountHook(log, "robot charging", () =>
         {
-            harmony.Patch(Machine.Method(typeof(RobotComponent), "ResetNumericModuleState"), postfix: Machine.Patch(typeof(RobotChargingPatch), nameof(ScaleCharging)));
-            harmony.Patch(Machine.Method(typeof(RobotComponent), "RecalcNumericModules"), postfix: Machine.Patch(typeof(RobotChargingPatch), nameof(ScaleCharging)));
+            hooks.PatchOrThrow(typeof(RobotChargingPatch), typeof(RobotComponent), "ResetNumericModuleState", postfix: nameof(ScaleCharging));
+            hooks.PatchOrThrow(typeof(RobotChargingPatch), typeof(RobotComponent), "RecalcNumericModules", postfix: nameof(ScaleCharging));
         });
         // In from the start, so every loaded robot is known and moved over when the setting changes, including a
         // world's own setting that arrives after its robots have loaded. At 1 the hook hands back the game's rate.
@@ -110,7 +113,7 @@ internal static class RobotChargingPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 
@@ -128,7 +131,7 @@ internal static class RobotChargingPatch
             catch (Exception ex)
             {
                 Robots.Remove(pointer);
-                _failures.Report(ex);
+                _fail(ex);
             }
         }
     }
@@ -151,7 +154,7 @@ internal static class FridgeStrengthPatch
 
     private static Multiplier _strength = Multiplier.GameAmount;
     private static AmountHook? _hook;
-    private static HookFailures _failures = HookFailures.Silent;
+    private static Action<Exception> _fail = _ => { };
     private static FirstUse _first = FirstUse.Silent;
     private static readonly StampedCache<int, long, Config_Furniture?> FridgesThisFrame = new();
     private static Config_Furniture? _changedRow;
@@ -160,20 +163,21 @@ internal static class FridgeStrengthPatch
     private static int _talentFrame = -1;
     private static float _talent;
 
-    public static void Apply(Harmony harmony, SpeedLog log)
+    public static void Apply(PatchKit hooks, ModLog log)
     {
-        (_failures, _first) = (new HookFailures(log.Write, "changing fridge strength", "rate"), new FirstUse(log.WriteFileOnly));
+        _fail = ex => hooks.Fail("changing fridge strength, it keeps the game's rate", ex);
+        _first = new FirstUse(log.WriteFileOnly);
         _hook = new AmountHook(log, "fridge strength",
             () =>
             {
-                harmony.Patch(Machine.Method(typeof(ItemManager), "GetTalentEffectRatio"), prefix: Machine.Patch(typeof(FridgeStrengthPatch), nameof(HideTalent)));
-                harmony.Patch(Machine.Method(typeof(ItemManager), "ComputeItemTimeScale"), prefix: Machine.Patch(typeof(FridgeStrengthPatch), nameof(StrengthenFridge)),
-                    postfix: Machine.Patch(typeof(FridgeStrengthPatch), nameof(PutBack)));
+                hooks.PatchOrThrow(typeof(FridgeStrengthPatch), typeof(ItemManager), "GetTalentEffectRatio", prefix: nameof(HideTalent));
+                hooks.PatchOrThrow(typeof(FridgeStrengthPatch), typeof(ItemManager), "ComputeItemTimeScale", prefix: nameof(StrengthenFridge),
+                    postfix: nameof(PutBack));
             },
             () =>
             {
-                harmony.Patch(Machine.Method(typeof(FridgeDisplayRules), nameof(FridgeDisplayRules.GetEffectiveColdRate)), postfix: Machine.Patch(typeof(FridgeStrengthPatch), nameof(ScaleShownRate)));
-                harmony.Patch(Machine.Method(typeof(FridgeDisplayRules), nameof(FridgeDisplayRules.GetPreservationRate)), postfix: Machine.Patch(typeof(FridgeStrengthPatch), nameof(ScaleShownFigure)));
+                hooks.PatchOrThrow(typeof(FridgeStrengthPatch), typeof(FridgeDisplayRules), nameof(FridgeDisplayRules.GetEffectiveColdRate), postfix: nameof(ScaleShownRate));
+                hooks.PatchOrThrow(typeof(FridgeStrengthPatch), typeof(FridgeDisplayRules), nameof(FridgeDisplayRules.GetPreservationRate), postfix: nameof(ScaleShownFigure));
             });
     }
 
@@ -208,7 +212,7 @@ internal static class FridgeStrengthPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 
@@ -283,7 +287,7 @@ internal static class FridgeStrengthPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 
@@ -298,7 +302,7 @@ internal static class FridgeStrengthPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 }
@@ -317,14 +321,15 @@ internal static class EquipmentWearPatch
 
     private static Multiplier _wear = Multiplier.GameAmount;
     private static AmountHook? _hook;
-    private static HookFailures _failures = HookFailures.Silent;
+    private static Action<Exception> _fail = _ => { };
     private static FirstUse _first = FirstUse.Silent;
 
-    public static void Apply(Harmony harmony, SpeedLog log)
+    public static void Apply(PatchKit hooks, ModLog log)
     {
-        (_failures, _first) = (new HookFailures(log.Write, "changing equipment wear", "amount"), new FirstUse(log.WriteFileOnly));
+        _fail = ex => hooks.Fail("changing equipment wear, it keeps the game's amount", ex);
+        _first = new FirstUse(log.WriteFileOnly);
         _hook = new AmountHook(log, "equipment wear", () =>
-            harmony.Patch(Machine.Method(typeof(FurnitureDurabilityComponent), nameof(FurnitureDurabilityComponent.TakeDamage)), prefix: Machine.Patch(typeof(EquipmentWearPatch), nameof(ScaleWear))));
+            hooks.PatchOrThrow(typeof(EquipmentWearPatch), typeof(FurnitureDurabilityComponent), nameof(FurnitureDurabilityComponent.TakeDamage), prefix: nameof(ScaleWear)));
     }
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>
@@ -352,7 +357,7 @@ internal static class EquipmentWearPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 

@@ -1,8 +1,9 @@
 using System;
+using ExiledToolkit.Game;
+using ExiledToolkit.Kit;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
 using GameCore.HotUpdate.ReduxUI;
-using HarmonyLib;
 using MachineSpeed.Core;
 
 namespace MachineSpeed.Adapters;
@@ -18,15 +19,16 @@ internal static class ShredderPatch
 {
     private static Speed _speed = Speed.GamePace;
     private static MachineHook? _hook;
-    private static HookFailures _failures = HookFailures.Silent;
+    private static Action<Exception> _fail = _ => { };
     private static FirstUse _first = FirstUse.Silent;
 
-    public static void Apply(Harmony harmony, SpeedLog log)
+    public static void Apply(PatchKit hooks, ModLog log)
     {
-        (_failures, _first) = (new HookFailures(log.Write, "speeding up the shredder"), new FirstUse(log.WriteFileOnly));
+        _fail = ex => hooks.Fail("speeding up the shredder, it keeps the game's duration", ex);
+        _first = new FirstUse(log.WriteFileOnly);
         _hook = new MachineHook(log, "shredder",
-            () => harmony.Patch(Machine.Method(typeof(ShredderComponent), nameof(ShredderComponent.BeginShred)), prefix: Machine.Patch(typeof(ShredderPatch), nameof(ScaleJob))),
-            () => harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.BuildShredderPanelData)), postfix: Machine.Patch(typeof(ShredderPatch), nameof(ScalePanel))));
+            () => hooks.PatchOrThrow(typeof(ShredderPatch), typeof(ShredderComponent), nameof(ShredderComponent.BeginShred), prefix: nameof(ScaleJob)),
+            () => hooks.PatchOrThrow(typeof(ShredderPatch), typeof(Furniture), nameof(Furniture.BuildShredderPanelData), postfix: nameof(ScalePanel)));
     }
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>
@@ -49,7 +51,7 @@ internal static class ShredderPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 
@@ -67,7 +69,7 @@ internal static class ShredderPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 }
@@ -80,15 +82,16 @@ internal static class RationPressPatch
 {
     private static Speed _speed = Speed.GamePace;
     private static MachineHook? _hook;
-    private static HookFailures _failures = HookFailures.Silent;
+    private static Action<Exception> _fail = _ => { };
     private static FirstUse _first = FirstUse.Silent;
 
-    public static void Apply(Harmony harmony, SpeedLog log)
+    public static void Apply(PatchKit hooks, ModLog log)
     {
-        (_failures, _first) = (new HookFailures(log.Write, "speeding up the ration press"), new FirstUse(log.WriteFileOnly));
+        _fail = ex => hooks.Fail("speeding up the ration press, it keeps the game's duration", ex);
+        _first = new FirstUse(log.WriteFileOnly);
         _hook = new MachineHook(log, "ration press",
-            () => harmony.Patch(Machine.Method(typeof(CompressorComponent), nameof(CompressorComponent.BeginCompress)), prefix: Machine.Patch(typeof(RationPressPatch), nameof(ScaleJob))),
-            () => harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.BuildCompressorPanelData)), postfix: Machine.Patch(typeof(RationPressPatch), nameof(ScalePanel))));
+            () => hooks.PatchOrThrow(typeof(RationPressPatch), typeof(CompressorComponent), nameof(CompressorComponent.BeginCompress), prefix: nameof(ScaleJob)),
+            () => hooks.PatchOrThrow(typeof(RationPressPatch), typeof(Furniture), nameof(Furniture.BuildCompressorPanelData), postfix: nameof(ScalePanel)));
     }
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>
@@ -111,7 +114,7 @@ internal static class RationPressPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 
@@ -123,7 +126,7 @@ internal static class RationPressPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 }
@@ -136,16 +139,17 @@ internal static class PlantGrowthPatch
 {
     private static Speed _speed = Speed.GamePace;
     private static MachineHook? _hook;
-    private static HookFailures _failures = HookFailures.Silent;
+    private static Action<Exception> _fail = _ => { };
     private static FirstUse _first = FirstUse.Silent;
 
-    public static void Apply(Harmony harmony, SpeedLog log)
+    public static void Apply(PatchKit hooks, ModLog log)
     {
-        (_failures, _first) = (new HookFailures(log.Write, "speeding up plant growth"), new FirstUse(log.WriteFileOnly));
+        _fail = ex => hooks.Fail("speeding up plant growth, it keeps the game's duration", ex);
+        _first = new FirstUse(log.WriteFileOnly);
         PlantCaches.UseLog(log);
         _hook = new MachineHook(log, "plant growth",
-            () => harmony.Patch(Machine.Method(typeof(PlantComponent), "CalcActualGrowthTime"), postfix: Machine.Patch(typeof(PlantGrowthPatch), nameof(Scale))),
-            () => harmony.Patch(Machine.Method(typeof(Reducer_Web_PlantPanel), "RecalcSelection"), postfix: Machine.Patch(typeof(PlantGrowthPatch), nameof(ScaleEstimate))));
+            () => hooks.PatchOrThrow(typeof(PlantGrowthPatch), typeof(PlantComponent), "CalcActualGrowthTime", postfix: nameof(Scale)),
+            () => hooks.PatchOrThrow(typeof(PlantGrowthPatch), typeof(Reducer_Web_PlantPanel), "RecalcSelection", postfix: nameof(ScaleEstimate)));
     }
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>
@@ -175,7 +179,7 @@ internal static class PlantGrowthPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 
@@ -192,7 +196,7 @@ internal static class PlantGrowthPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 }
@@ -202,14 +206,15 @@ internal static class DroneTripPatch
 {
     private static Speed _speed = Speed.GamePace;
     private static MachineHook? _hook;
-    private static HookFailures _failures = HookFailures.Silent;
+    private static Action<Exception> _fail = _ => { };
     private static FirstUse _first = FirstUse.Silent;
 
-    public static void Apply(Harmony harmony, SpeedLog log)
+    public static void Apply(PatchKit hooks, ModLog log)
     {
-        (_failures, _first) = (new HookFailures(log.Write, "speeding up a drone trip"), new FirstUse(log.WriteFileOnly));
+        _fail = ex => hooks.Fail("speeding up a drone trip, it keeps the game's duration", ex);
+        _first = new FirstUse(log.WriteFileOnly);
         _hook = new MachineHook(log, "drone trips", () =>
-            harmony.Patch(Machine.Method(typeof(DroneTripComponent), nameof(DroneTripComponent.StartTrip)), prefix: Machine.Patch(typeof(DroneTripPatch), nameof(Scale))));
+            hooks.PatchOrThrow(typeof(DroneTripPatch), typeof(DroneTripComponent), nameof(DroneTripComponent.StartTrip), prefix: nameof(Scale)));
     }
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>
@@ -232,7 +237,7 @@ internal static class DroneTripPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 }
@@ -243,14 +248,15 @@ internal static class CookingPatch
     private static Speed _speed = Speed.GamePace;
     private static CookSpeeds? _cooks;
     private static MachineHook? _hook;
-    private static HookFailures _failures = HookFailures.Silent;
+    private static Action<Exception> _fail = _ => { };
     private static FirstUse _first = FirstUse.Silent;
 
-    public static void Apply(Harmony harmony, SpeedLog log)
+    public static void Apply(PatchKit hooks, ModLog log)
     {
-        (_failures, _first) = (new HookFailures(log.Write, "speeding up a cook"), new FirstUse(log.WriteFileOnly));
+        _fail = ex => hooks.Fail("speeding up a cook, it keeps the game's duration", ex);
+        _first = new FirstUse(log.WriteFileOnly);
         _hook = new MachineHook(log, "cooking", () =>
-            harmony.Patch(Machine.Method(typeof(CookingComponent), nameof(CookingComponent.StartCooking)), prefix: Machine.Patch(typeof(CookingPatch), nameof(Scale))));
+            hooks.PatchOrThrow(typeof(CookingPatch), typeof(CookingComponent), nameof(CookingComponent.StartCooking), prefix: nameof(Scale)));
     }
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>
@@ -285,7 +291,7 @@ internal static class CookingPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 }
@@ -297,16 +303,18 @@ internal static class CookingPatch
 internal static class CookingFuelPatch
 {
     private static FuelUse _fuel = FuelUse.GameAmount;
-    private static HookFailures _failures = HookFailures.Silent;
+    private static Action<Exception> _fail = _ => { };
     private static FirstUse _first = FirstUse.Silent;
-    private static Harmony? _harmony;
-    private static SpeedLog? _log;
+    private static PatchKit? _hooks;
+    private static ModLog? _log;
     private static bool _isHooked;
     private static bool _hasFailed;
 
-    public static void Apply(Harmony harmony, SpeedLog log)
+    public static void Apply(PatchKit hooks, ModLog log)
     {
-        (_harmony, _log, _failures, _first) = (harmony, log, new HookFailures(log.Write, "changing the cooking fuel"), new FirstUse(log.WriteFileOnly));
+        (_hooks, _log) = (hooks, log);
+        _fail = ex => hooks.Fail("changing the cooking fuel, it keeps the game's duration", ex);
+        _first = new FirstUse(log.WriteFileOnly);
     }
 
     /// <summary>
@@ -317,7 +325,7 @@ internal static class CookingFuelPatch
     {
         _fuel = fuel;
 
-        if (_harmony == null || _log == null) return;
+        if (_hooks == null || _log == null) return;
 
         if (cooking.IsGamePace && fuel.IsGameAmount)
         {
@@ -328,23 +336,16 @@ internal static class CookingFuelPatch
 
         if (_hasFailed) return;
 
-        if (!_isHooked) Hook(_harmony, _log);
+        if (!_isHooked) Hook(_hooks);
 
         if (_isHooked) _log.Write($"cooking fuel x{fuel.Value:0.##} per dish");
     }
 
-    private static void Hook(Harmony harmony, SpeedLog log)
+    private static void Hook(PatchKit hooks)
     {
-        try
-        {
-            harmony.Patch(Machine.Method(typeof(CookingComponent), nameof(CookingComponent.UpdateFuelFromProgress)), prefix: Machine.Patch(typeof(CookingFuelPatch), nameof(ScaleRate)));
-            _isHooked = true;
-        }
-        catch (Exception ex)
-        {
-            _hasFailed = true;
-            log.Write($"could not hook the cooking fuel, a cook burns the game's fuel for its length: {ex.Message}");
-        }
+        _isHooked = hooks.Patch(typeof(CookingFuelPatch), typeof(CookingComponent), nameof(CookingComponent.UpdateFuelFromProgress), prefix: nameof(ScaleRate),
+            consequence: "a cook burns the game's fuel for its length");
+        _hasFailed = !_isHooked;
     }
 
     private static void ScaleRate(CookingComponent __instance, ref float fuelRate)
@@ -360,7 +361,7 @@ internal static class CookingFuelPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 }

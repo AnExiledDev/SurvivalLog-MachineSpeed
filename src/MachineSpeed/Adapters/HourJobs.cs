@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using ExiledToolkit.Game;
+using ExiledToolkit.Kit;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
 using MachineSpeed.Core;
@@ -30,7 +32,7 @@ internal static class HourJobs
 
     // Kept and emptied after each step, so stepping the jobs makes no new list four times a second.
     private static readonly List<KeyValuePair<(string Kind, long Id), IHourJob>> Stepping = new();
-    private static HookFailures _failures = HookFailures.Silent;
+    private static Action<Exception> _fail = _ => { };
     private static Speed _compost = Speed.GamePace;
     private static readonly Func<Speed> CompostSpeed = () => _compost;
     private static IntPtr _world;
@@ -40,7 +42,7 @@ internal static class HourJobs
     private static float _nextBinScan = 1.25f;
     private static float _nextPlantScan = 3.75f;
 
-    public static void UseLog(SpeedLog log) => _failures = new HookFailures(log.Write, "moving a brew, dye job or compost bin along");
+    public static void ReportFailuresTo(PatchKit hooks) => _fail = ex => hooks.Fail("moving a brew, dye job or compost bin along, it keeps the game's duration", ex);
 
     /// <summary>Bins already found move on at the new speed from the next tick. Set on the main thread, where the ticker runs.</summary>
     public static void UseCompost(Speed compost) => _compost = compost;
@@ -84,7 +86,7 @@ internal static class HourJobs
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 
@@ -122,7 +124,7 @@ internal static class HourJobs
                 catch (Exception ex)
                 {
                     isRunning = false;
-                    _failures.Report(ex);
+                    _fail(ex);
                 }
 
                 if (!isRunning) Jobs.Remove(key);
@@ -167,7 +169,7 @@ internal sealed class BrewJob : IHourJob
         _speed = speed;
     }
 
-    public static void UseLog(SpeedLog log) => _first = new FirstUse(log.WriteFileOnly);
+    public static void UseLog(ModLog log) => _first = new FirstUse(log.WriteFileOnly);
 
     /// <summary>The speed is read at every step, so a brew already running follows a change of the setting.</summary>
     public static void TrackIfBrewing(Furniture? furniture, Func<Speed> speed)
@@ -223,7 +225,7 @@ internal sealed class DyeJob : IHourJob
         _speed = speed;
     }
 
-    public static void UseLog(SpeedLog log) => _first = new FirstUse(log.WriteFileOnly);
+    public static void UseLog(ModLog log) => _first = new FirstUse(log.WriteFileOnly);
 
     /// <summary>The speed is read at every step, so a dye job already running follows a change of the setting.</summary>
     public static void TrackIfRunning(Furniture? furniture, Func<Speed> speed)
@@ -280,7 +282,7 @@ internal sealed class CompostJob : IHourJob
         _speed = speed;
     }
 
-    public static void UseLog(SpeedLog log) => _first = new FirstUse(log.WriteFileOnly);
+    public static void UseLog(ModLog log) => _first = new FirstUse(log.WriteFileOnly);
 
     /// <summary>Whether a piece is a bin is known once per kind of furniture, so the scan asks the game nothing of other pieces.</summary>
     public static void FindBins(BattleLogicWorld world, Func<Speed> speed)

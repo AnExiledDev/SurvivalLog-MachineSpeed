@@ -1,7 +1,9 @@
 using System;
 using BepInEx.Configuration;
 using BepInEx.Unity.IL2CPP;
-using HarmonyLib;
+using ExiledToolkit;
+using ExiledToolkit.Game;
+using ExiledToolkit.Kit;
 using MachineSpeed.Core;
 using static MachineSpeed.Adapters.WorldRule;
 
@@ -20,17 +22,17 @@ internal static class AmountPatches
     private const string RateRange = "From 0.1 to 100: 0 or less counts as 1, between 0 and 0.1 counts as 0.1, more than 100 counts as 100.";
     private const string RateRangeChinese = "范围 0.1 到 100：0 或更小按 1 计算，0 到 0.1 之间按 0.1 计算，大于 100 按 100 计算。";
 
-    public static void Apply(BasePlugin plugin, Harmony harmony, SpeedLog log)
+    public static void Apply(BasePlugin plugin, PatchKit hooks, ModLog log)
     {
-        ShredderOutputPatch.Apply(harmony, log);
-        RationPressOutputPatch.Apply(harmony, log);
-        BrewingOutputPatch.Apply(harmony, log);
-        CompostOutputPatch.Apply(harmony, log);
-        HarvestOutputPatch.Apply(harmony, log);
-        BarrelCapacityPatch.Apply(harmony, log);
-        RobotChargingPatch.Apply(harmony, log);
-        FridgeStrengthPatch.Apply(harmony, log);
-        EquipmentWearPatch.Apply(harmony, log);
+        ShredderOutputPatch.Apply(hooks, log);
+        RationPressOutputPatch.Apply(hooks, log);
+        BrewingOutputPatch.Apply(hooks, log);
+        CompostOutputPatch.Apply(hooks, log);
+        HarvestOutputPatch.Apply(hooks, log);
+        BarrelCapacityPatch.Apply(hooks, log);
+        RobotChargingPatch.Apply(hooks, log);
+        FridgeStrengthPatch.Apply(hooks, log);
+        EquipmentWearPatch.Apply(hooks, log);
 
         var config = plugin.Config;
 
@@ -63,11 +65,11 @@ internal static class AmountPatches
             "防御装置因损耗和攻击失去的耐久：1 为游戏原量，0.5 为一半，0 为无损耗，2 为两倍。门窗不受影响，波次战报仍按游戏原本的「装置损耗」计算。小数部分累计到下一次。范围 0 到 100：小于 0 按 1 计算，大于 100 按 100 计算。");
     }
 
-    private static void Watch(ConfigFile config, SpeedLog log, string key, float least, float most, Action<Multiplier> use, string english, string chinese)
+    private static void Watch(ConfigFile config, ModLog log, string key, float least, float most, Action<Multiplier> use, string english, string chinese)
     {
         var entry = config.Bind(Section, key, 1f, Rule($"{english}\n{chinese}"));
 
-        OptionalLive.Watch(entry, value =>
+        LiveSettings.Watch(entry, value =>
         {
             var multiplier = Multiplier.From(value, least, most);
 
@@ -92,13 +94,13 @@ internal sealed class AmountHook
         Failed,
     }
 
-    private readonly SpeedLog _log;
+    private readonly ModLog _log;
     private readonly string _name;
     private readonly Action _install;
     private readonly Action? _installDisplay;
     private HookState _state = HookState.Waiting;
 
-    public AmountHook(SpeedLog log, string name, Action install, Action? installDisplay = null)
+    public AmountHook(ModLog log, string name, Action install, Action? installDisplay = null)
     {
         _log = log;
         _name = name;

@@ -1,6 +1,5 @@
 using System;
-using System.IO;
-using GameCore.HotUpdate.ReduxUI;
+using ExiledToolkit.Web;
 using MachineSpeed.Core;
 
 namespace MachineSpeed.Adapters;
@@ -13,80 +12,32 @@ namespace MachineSpeed.Adapters;
 /// </summary>
 internal sealed class OverviewPage
 {
-    private const float CheckSeconds = 2f;
     private const string ScriptResource = "MachineSpeed.overview.js";
     private const string Handle = "window.__slmachineoverview";
-    private const string NoScriptReply = "window.vuplex&&window.vuplex.postMessage('" + OverviewCommand.Prefix + "noscript')";
 
-    private readonly Action<string> _log;
-    private string? _script;
-    private float _nextCheckAt;
-    private bool _hasReportedRunFailure;
+    private readonly WebPage _page;
 
     public OverviewPage(Action<string> log)
     {
-        _log = log;
+        _page = new WebPage(typeof(OverviewPage).Assembly, ScriptResource, Handle, OverviewCommand.Prefix + "noscript", log) { Name = "Machines window" };
     }
 
-    public void KeepInstalled(float now)
-    {
-        if (now < _nextCheckAt) return;
+    public void KeepInstalled(double now) => _page.KeepInstalled(now);
 
-        _nextCheckAt = now + CheckSeconds;
-        Run(Handle + "||" + NoScriptReply);
-    }
+    public void Install() => _page.Install();
 
-    public void Install()
-    {
-        if (Run(Script())) _log("Machines window script sent to the web UI");
-    }
+    public void Open(string viewJson) => _page.Call($"open({viewJson})");
 
-    public void Open(string viewJson) => Call($"open({viewJson})");
+    public void Show(string viewJson) => _page.Call($"setData({viewJson})");
 
-    public void Show(string viewJson) => Call($"setData({viewJson})");
-
-    public void Close() => Call("close()");
+    public void Close() => _page.Call("close()");
 
     /// <summary>A result line in the window's footer while it is open. It also frees the buttons.</summary>
-    public void Status(string text) => Call($"status({JsText.Literal(text)})");
+    public void Status(string text) => _page.Call($"status({JsText.Literal(text)})");
 
     /// <summary>Whether a game is loaded (the HUD button shows only then), with the button's tooltip.</summary>
-    public bool Live(bool isLive, string title, string tip) => Call($"live({(isLive ? "true" : "false")},{JsText.Literal(title)},{JsText.Literal(tip)})");
+    public bool Live(bool isLive, string title, string tip) => _page.Call($"live({(isLive ? "true" : "false")},{JsText.Literal(title)},{JsText.Literal(tip)})");
 
     /// <summary>The HUD button's two counts, machines working and machines that need the player, sent whether or not the window is open.</summary>
-    public bool Badge(int working, int needs) => Call($"badge({working},{needs})");
-
-    private bool Call(string expression) => Run($"{Handle}?{Handle}.{expression}:{NoScriptReply}");
-
-    private bool Run(string javaScript)
-    {
-        var webView = GameSingleton.Existing<ReduxUISystem>()?.GetWebUILayer()?.canvasWebViewPrefab?.WebView;
-
-        if (webView == null) return false;
-
-        try
-        {
-            webView.ExecuteJavaScript(javaScript, null);
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            if (!_hasReportedRunFailure) _log("could not run the Machines window script in the web UI (reported once): " + ex.Message);
-
-            _hasReportedRunFailure = true;
-
-            return false;
-        }
-    }
-
-    private string Script()
-    {
-        if (_script != null) return _script;
-
-        using var stream = typeof(OverviewPage).Assembly.GetManifestResourceStream(ScriptResource) ?? throw new InvalidOperationException(ScriptResource + " is not embedded");
-        using var reader = new StreamReader(stream);
-
-        return _script = reader.ReadToEnd();
-    }
+    public bool Badge(int working, int needs) => _page.Call($"badge({working},{needs})");
 }

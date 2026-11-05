@@ -1,7 +1,8 @@
 using System;
+using ExiledToolkit.Game;
+using ExiledToolkit.Kit;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
-using HarmonyLib;
 using MachineSpeed.Core;
 
 namespace MachineSpeed.Adapters;
@@ -17,22 +18,22 @@ internal static class BrewingPatch
     // One for every brew, read at each step so a change of the setting reaches brews already running.
     private static readonly Func<Speed> SpeedNow = () => _speed;
     private static MachineHook? _hook;
-    private static HookFailures _failures = HookFailures.Silent;
+    private static Action<Exception> _fail = _ => { };
 
-    public static void Apply(Harmony harmony, SpeedLog log)
+    public static void Apply(PatchKit hooks, ModLog log)
     {
-        _failures = new HookFailures(log.Write, "speeding up a brew");
+        _fail = ex => hooks.Fail("speeding up a brew, it keeps the game's duration", ex);
         BrewJob.UseLog(log);
         _hook = new MachineHook(log, "brewing",
             () =>
             {
-                harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.OnBrewStart)), postfix: Machine.Patch(typeof(BrewingPatch), nameof(Started)));
-                harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.TryFinishBrew)), postfix: Machine.Patch(typeof(BrewingPatch), nameof(Checked)));
+                hooks.PatchOrThrow(typeof(BrewingPatch), typeof(Furniture), nameof(Furniture.OnBrewStart), postfix: nameof(Started));
+                hooks.PatchOrThrow(typeof(BrewingPatch), typeof(Furniture), nameof(Furniture.TryFinishBrew), postfix: nameof(Checked));
             },
             () =>
             {
-                harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.BuildBrewPanelData)), postfix: Machine.Patch(typeof(BrewingPatch), nameof(ScalePanel)));
-                harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.SyncBrewHeadBar)), postfix: Machine.Patch(typeof(BrewingPatch), nameof(ScaleHeadBar)));
+                hooks.PatchOrThrow(typeof(BrewingPatch), typeof(Furniture), nameof(Furniture.BuildBrewPanelData), postfix: nameof(ScalePanel));
+                hooks.PatchOrThrow(typeof(BrewingPatch), typeof(Furniture), nameof(Furniture.SyncBrewHeadBar), postfix: nameof(ScaleHeadBar));
             });
     }
 
@@ -62,7 +63,7 @@ internal static class BrewingPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 
@@ -81,7 +82,7 @@ internal static class BrewingPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 
@@ -106,7 +107,7 @@ internal static class BrewingPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 }
@@ -122,22 +123,22 @@ internal static class DyeVatPatch
     // One for every dye job, read at each step so a change of the setting reaches jobs already running.
     private static readonly Func<Speed> SpeedNow = () => _speed;
     private static MachineHook? _hook;
-    private static HookFailures _failures = HookFailures.Silent;
+    private static Action<Exception> _fail = _ => { };
 
-    public static void Apply(Harmony harmony, SpeedLog log)
+    public static void Apply(PatchKit hooks, ModLog log)
     {
-        _failures = new HookFailures(log.Write, "speeding up the dye vat");
+        _fail = ex => hooks.Fail("speeding up the dye vat, it keeps the game's duration", ex);
         DyeJob.UseLog(log);
         _hook = new MachineHook(log, "dye vat",
             () =>
             {
-                harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.OnDyeStart)), postfix: Machine.Patch(typeof(DyeVatPatch), nameof(Started)));
-                harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.TryFinishDye)), postfix: Machine.Patch(typeof(DyeVatPatch), nameof(Checked)));
+                hooks.PatchOrThrow(typeof(DyeVatPatch), typeof(Furniture), nameof(Furniture.OnDyeStart), postfix: nameof(Started));
+                hooks.PatchOrThrow(typeof(DyeVatPatch), typeof(Furniture), nameof(Furniture.TryFinishDye), postfix: nameof(Checked));
             },
             () =>
             {
-                harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.BuildDyePanelData)), postfix: Machine.Patch(typeof(DyeVatPatch), nameof(ScalePanel)));
-                harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.SyncDyeHeadBar)), postfix: Machine.Patch(typeof(DyeVatPatch), nameof(ScaleHeadBar)));
+                hooks.PatchOrThrow(typeof(DyeVatPatch), typeof(Furniture), nameof(Furniture.BuildDyePanelData), postfix: nameof(ScalePanel));
+                hooks.PatchOrThrow(typeof(DyeVatPatch), typeof(Furniture), nameof(Furniture.SyncDyeHeadBar), postfix: nameof(ScaleHeadBar));
             });
     }
 
@@ -167,7 +168,7 @@ internal static class DyeVatPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 
@@ -188,7 +189,7 @@ internal static class DyeVatPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 
@@ -213,7 +214,7 @@ internal static class DyeVatPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 }
@@ -231,9 +232,9 @@ internal static class GameHeadBar
 /// <summary>Compost bins have no start to hook; the ticker finds them. This hands the ticker the speed and logs it.</summary>
 internal static class CompostPatch
 {
-    private static SpeedLog? _log;
+    private static ModLog? _log;
 
-    public static void Apply(SpeedLog log)
+    public static void Apply(ModLog log)
     {
         _log = log;
         CompostJob.UseLog(log);

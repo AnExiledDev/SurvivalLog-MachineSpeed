@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using ExiledToolkit.Game;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
 using MachineSpeed.Core;
@@ -399,7 +400,7 @@ internal sealed class MachineReader
         {
             CookingState.Running => Row(MachineKind.Cooking, pass, furniture, null, MachineState.Running, Math.Max(0, cooking.CookDuration - (pass.Now - start)), canRush: true, cooking.CookDuration),
             CookingState.Paused => Row(MachineKind.Cooking, pass, furniture, null, MachineState.Paused, Math.Max(0, cooking.CookDuration - (cooking.PauseStartTotalSeconds - start)), canRush: false, cooking.CookDuration),
-            _ when cooking.HasPendingProduct => Row(MachineKind.Cooking, pass, furniture, NonEmpty(cooking.PendingProductName), MachineState.Finished, null, canRush: false),
+            _ when cooking.HasPendingProduct => Row(MachineKind.Cooking, pass, furniture, GameNames.NonEmpty(cooking.PendingProductName), MachineState.Finished, null, canRush: false),
             _ => Row(MachineKind.Cooking, pass, furniture, null, MachineState.Idle, null, canRush: false),
         };
     }
@@ -472,7 +473,7 @@ internal sealed class MachineReader
         if (_looks.TryGet((configId, kind), out var looks)) return looks;
 
         var row = pass.Config.Get_Config_Furniture(configId);
-        var name = row == null ? "" : Translate(pass.Config, row.Name) ?? NonEmpty(row.Name_Local) ?? NonEmpty(row.Name) ?? "";
+        var name = row == null ? "" : GameNames.Translate(pass.Config, row.Name) ?? GameNames.NonEmpty(row.Name_Local) ?? GameNames.NonEmpty(row.Name) ?? "";
 
         looks = (name, MachineIcons.Of(kind, row?.ICON));
         _looks.Set((configId, kind), looks);
@@ -484,9 +485,7 @@ internal sealed class MachineReader
     {
         if (_itemNames.TryGet(itemId, out var name)) return name;
 
-        var item = pass.Config.Get_Config_Item(itemId);
-
-        name = item == null ? null : Translate(pass.Config, item.ItemName) ?? NonEmpty(item.ItemName_Local) ?? NonEmpty(item.ItemName);
+        name = GameNames.ItemName(pass.Config, itemId);
         _itemNames.Set(itemId, name);
 
         return name;
@@ -496,23 +495,11 @@ internal sealed class MachineReader
     {
         if (_products.TryGet((kind, resultItemId), out var name)) return name;
 
-        name = NonEmpty(kind == MachineKind.Brewing ? Furniture.GetBrewProductName(resultItemId) : Furniture.GetDyeProductName(resultItemId));
+        name = GameNames.NonEmpty(kind == MachineKind.Brewing ? Furniture.GetBrewProductName(resultItemId) : Furniture.GetDyeProductName(resultItemId));
         _products.Set((kind, resultItemId), name);
 
         return name;
     }
-
-    /// <summary>The game's text for a key; null when there is none, which the game shows as the key itself.</summary>
-    private static string? Translate(ConfigManager config, string? key)
-    {
-        if (string.IsNullOrEmpty(key)) return null;
-
-        var text = config.GetLocalTxt(key);
-
-        return string.IsNullOrWhiteSpace(text) || text == key ? null : text;
-    }
-
-    private static string? NonEmpty(string? text) => string.IsNullOrWhiteSpace(text) ? null : text;
 
     private void ReportOnce(string what, Exception ex)
     {

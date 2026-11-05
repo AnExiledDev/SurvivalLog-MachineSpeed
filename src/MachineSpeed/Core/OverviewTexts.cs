@@ -1,15 +1,7 @@
 using System;
-using System.Globalization;
+using ExiledToolkit.Kit;
 
 namespace MachineSpeed.Core;
-
-/// <summary>One piece of on-screen text in the two languages the game ships. {0}, {1} are filled in by Say.</summary>
-public readonly record struct Phrase(string En, string Zh)
-{
-    public string Pick(bool isChinese) => isChinese ? Zh : En;
-
-    public string Say(bool isChinese, params object[] args) => string.Format(CultureInfo.InvariantCulture, Pick(isChinese), args);
-}
 
 /// <summary>A time as the window writes it: the number, then the small word after it ("left", "done").</summary>
 public readonly record struct TimeText(string Value, string Word);

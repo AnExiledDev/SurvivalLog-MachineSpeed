@@ -1,8 +1,9 @@
 using System;
 using System.IO;
+using ExiledToolkit.Kit;
+using ExiledToolkit.Web;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
-using GameCore.HotUpdate.ReduxUI;
 using MachineSpeed.Core;
 
 namespace MachineSpeed.Adapters;
@@ -20,7 +21,8 @@ internal static class TimerPage
     private const float PushSeconds = 1f;
     private const string ScriptResource = "MachineSpeed.page.js";
     private const string Handle = "window.__slmachinespeed";
-    private const string NoScriptReply = "window.vuplex&&window.vuplex.postMessage('" + OverviewCommand.Prefix + "timernoscript')";
+    private const string NoScriptMessage = OverviewCommand.Prefix + "timernoscript";
+    private const string NoScriptReply = "window.vuplex&&window.vuplex.postMessage('" + NoScriptMessage + "')";
 
     private static Action<string> _log = _ => { };
     private static string? _script;
@@ -29,7 +31,7 @@ internal static class TimerPage
     private static float _nextPush;
     private static bool _isChanged;
 
-    // Set from the web view's message hook, read on the next tick.
+    // Set when the page says it has no script, read on the next tick.
     private static volatile bool _isInstallAsked;
     private static PagePrint? _lastPrint;
     private static Furniture? _brewBarrel;
@@ -38,7 +40,15 @@ internal static class TimerPage
     private static int _dyeHoursPerBucket;
     private static int _dyePreviewHours;
 
-    public static void UseLog(SpeedLog log) => _log = log.Write;
+    /// <summary>
+    /// The page's answer that it has no script comes straight here, not through the Machines window's mailbox, so the
+    /// times keep their script even when the window could not start.
+    /// </summary>
+    public static void Start(ModLog log)
+    {
+        _log = log.Write;
+        PageInbox.Listen(NoScriptMessage, _ => AskInstall());
+    }
 
     /// <summary>The barrel whose panel was just built, with the game's hours for the brew picked.</summary>
     public static void ShowingBrew(Furniture? barrel, int gameHours)
@@ -80,7 +90,7 @@ internal static class TimerPage
         {
             _nextInstall = realSeconds + InstallSeconds;
 
-            if (OverviewMessages.IsListening) Run(Handle + "||" + NoScriptReply);
+            if (PageInbox.IsListening) Run(Handle + "||" + NoScriptReply);
             else Install();
         }
 
@@ -144,27 +154,17 @@ internal static class TimerPage
         return new DyeTimes(Countdown.Estimate(_dyeHoursPerBucket, speed), Countdown.Estimate(_dyePreviewHours, speed), bucketRemain, totalRemain);
     }
 
-    // ReduxUISystem.GetWebUILayer and the layer's canvasWebViewPrefab are how the game's own pages are reached.
     private static bool Run(string javaScript)
     {
-        var webView = GameSingleton.Existing<ReduxUISystem>()?.GetWebUILayer()?.canvasWebViewPrefab?.WebView;
+        if (WebUi.TryRun(javaScript, out var failure)) return true;
 
-        if (webView == null) return false;
-
-        try
+        if (failure != null && !_hasReportedRunFailure)
         {
-            webView.ExecuteJavaScript(javaScript, null);
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            if (!_hasReportedRunFailure) _log("could not show sped-up times on the machine panels (reported once): " + ex.Message);
-
             _hasReportedRunFailure = true;
-
-            return false;
+            _log("could not show sped-up times on the machine panels (reported once): " + failure.Message);
         }
+
+        return false;
     }
 
     private static string Script()

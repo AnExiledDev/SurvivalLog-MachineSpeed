@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
+using ExiledToolkit.Game;
+using ExiledToolkit.Kit;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
-using HarmonyLib;
 using MachineSpeed.Core;
 using Il2CppCounts = Il2CppSystem.Collections.Generic.Dictionary<int, int>;
 using Il2CppYields = Il2CppSystem.Collections.Generic.List<GameCore.HotUpdate.ShredderYieldInfo>;
@@ -24,19 +25,20 @@ internal static class ShredderOutputPatch
 
     private static Multiplier _output = Multiplier.GameAmount;
     private static AmountHook? _hook;
-    private static HookFailures _failures = HookFailures.Silent;
+    private static Action<Exception> _fail = _ => { };
     private static FirstUse _first = FirstUse.Silent;
     private static bool _isSettling;
     private static long _shreddedItemId;
 
-    public static void Apply(Harmony harmony, SpeedLog log)
+    public static void Apply(PatchKit hooks, ModLog log)
     {
-        (_failures, _first) = (new HookFailures(log.Write, "changing the shredder's output", "amount"), new FirstUse(log.WriteFileOnly));
+        _fail = ex => hooks.Fail("changing the shredder's output, it keeps the game's amount", ex);
+        _first = new FirstUse(log.WriteFileOnly);
         _hook = new AmountHook(log, "shredder output", () =>
         {
-            harmony.Patch(Machine.Method(typeof(ConfigManager), nameof(ConfigManager.GetShredYields)), postfix: Machine.Patch(typeof(ShredderOutputPatch), nameof(ScaleYields)));
-            harmony.Patch(Machine.Method(typeof(Furniture), "SettleShred"), prefix: Machine.Patch(typeof(ShredderOutputPatch), nameof(BeginSettle)),
-                postfix: Machine.Patch(typeof(ShredderOutputPatch), nameof(EndSettle)));
+            hooks.PatchOrThrow(typeof(ShredderOutputPatch), typeof(ConfigManager), nameof(ConfigManager.GetShredYields), postfix: nameof(ScaleYields));
+            hooks.PatchOrThrow(typeof(ShredderOutputPatch), typeof(Furniture), "SettleShred", prefix: nameof(BeginSettle),
+                postfix: nameof(EndSettle));
         });
     }
 
@@ -68,7 +70,7 @@ internal static class ShredderOutputPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 
@@ -83,7 +85,7 @@ internal static class ShredderOutputPatch
         catch (Exception ex)
         {
             _isSettling = false;
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 
@@ -106,7 +108,7 @@ internal static class ShredderOutputPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
         finally
         {
@@ -129,14 +131,15 @@ internal static class RationPressOutputPatch
 
     private static Multiplier _output = Multiplier.GameAmount;
     private static AmountHook? _hook;
-    private static HookFailures _failures = HookFailures.Silent;
+    private static Action<Exception> _fail = _ => { };
     private static FirstUse _first = FirstUse.Silent;
 
-    public static void Apply(Harmony harmony, SpeedLog log)
+    public static void Apply(PatchKit hooks, ModLog log)
     {
-        (_failures, _first) = (new HookFailures(log.Write, "changing the ration press output", "amount"), new FirstUse(log.WriteFileOnly));
+        _fail = ex => hooks.Fail("changing the ration press output, it keeps the game's amount", ex);
+        _first = new FirstUse(log.WriteFileOnly);
         _hook = new AmountHook(log, "ration press output", () =>
-            harmony.Patch(Machine.Method(typeof(CompressorComponent), nameof(CompressorComponent.BeginCompress)), prefix: Machine.Patch(typeof(RationPressOutputPatch), nameof(ScaleBatch))));
+            hooks.PatchOrThrow(typeof(RationPressOutputPatch), typeof(CompressorComponent), nameof(CompressorComponent.BeginCompress), prefix: nameof(ScaleBatch)));
     }
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>
@@ -164,7 +167,7 @@ internal static class RationPressOutputPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 
@@ -196,15 +199,16 @@ internal static class BrewingOutputPatch
 
     private static Multiplier _output = Multiplier.GameAmount;
     private static AmountHook? _hook;
-    private static HookFailures _failures = HookFailures.Silent;
+    private static Action<Exception> _fail = _ => { };
     private static FirstUse _first = FirstUse.Silent;
 
-    public static void Apply(Harmony harmony, SpeedLog log)
+    public static void Apply(PatchKit hooks, ModLog log)
     {
-        (_failures, _first) = (new HookFailures(log.Write, "changing the brewing output", "amount"), new FirstUse(log.WriteFileOnly));
+        _fail = ex => hooks.Fail("changing the brewing output, it keeps the game's amount", ex);
+        _first = new FirstUse(log.WriteFileOnly);
         _hook = new AmountHook(log, "brewing output",
-            () => harmony.Patch(Machine.Method(typeof(BrewComponent), nameof(BrewComponent.BeginBrew)), prefix: Machine.Patch(typeof(BrewingOutputPatch), nameof(ScaleBrew))),
-            () => harmony.Patch(Machine.Method(typeof(Furniture), nameof(Furniture.BuildBrewPanelData)), postfix: Machine.Patch(typeof(BrewingOutputPatch), nameof(ScalePanel))));
+            () => hooks.PatchOrThrow(typeof(BrewingOutputPatch), typeof(BrewComponent), nameof(BrewComponent.BeginBrew), prefix: nameof(ScaleBrew)),
+            () => hooks.PatchOrThrow(typeof(BrewingOutputPatch), typeof(Furniture), nameof(Furniture.BuildBrewPanelData), postfix: nameof(ScalePanel)));
     }
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>
@@ -227,7 +231,7 @@ internal static class BrewingOutputPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 
@@ -239,7 +243,7 @@ internal static class BrewingOutputPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 }
@@ -254,17 +258,18 @@ internal static class CompostOutputPatch
 
     private static Multiplier _output = Multiplier.GameAmount;
     private static AmountHook? _hook;
-    private static HookFailures _failures = HookFailures.Silent;
+    private static Action<Exception> _fail = _ => { };
     private static FirstUse _first = FirstUse.Silent;
     private static (long Bin, int Product, int Count)? _pending;
     private static readonly StampedCache<int, long, bool> BinsThisFrame = new();
 
-    public static void Apply(Harmony harmony, SpeedLog log)
+    public static void Apply(PatchKit hooks, ModLog log)
     {
-        (_failures, _first) = (new HookFailures(log.Write, "changing the compost output", "amount"), new FirstUse(log.WriteFileOnly));
+        _fail = ex => hooks.Fail("changing the compost output, it keeps the game's amount", ex);
+        _first = new FirstUse(log.WriteFileOnly);
         _hook = new AmountHook(log, "compost output", () =>
-            harmony.Patch(Machine.Method(typeof(ItemManager), "CheckAndProcessRot"), prefix: Machine.Patch(typeof(CompostOutputPatch), nameof(ReadProduct)),
-                postfix: Machine.Patch(typeof(CompostOutputPatch), nameof(AddExtra))));
+            hooks.PatchOrThrow(typeof(CompostOutputPatch), typeof(ItemManager), "CheckAndProcessRot", prefix: nameof(ReadProduct),
+                postfix: nameof(AddExtra)));
     }
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>
@@ -290,7 +295,7 @@ internal static class CompostOutputPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 
@@ -329,7 +334,7 @@ internal static class CompostOutputPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
         finally
         {
@@ -348,18 +353,19 @@ internal static class HarvestOutputPatch
 
     private static Multiplier _output = Multiplier.GameAmount;
     private static AmountHook? _hook;
-    private static HookFailures _failures = HookFailures.Silent;
+    private static Action<Exception> _fail = _ => { };
     private static FirstUse _first = FirstUse.Silent;
     private static PlantHarvestYield? _harvest;
 
-    public static void Apply(Harmony harmony, SpeedLog log)
+    public static void Apply(PatchKit hooks, ModLog log)
     {
-        (_failures, _first) = (new HookFailures(log.Write, "changing the harvest output", "amount"), new FirstUse(log.WriteFileOnly));
+        _fail = ex => hooks.Fail("changing the harvest output, it keeps the game's amount", ex);
+        _first = new FirstUse(log.WriteFileOnly);
         _hook = new AmountHook(log, "harvest output", () =>
         {
-            harmony.Patch(Machine.Method(typeof(AE_HarvestPlant), "RollYield"), prefix: Machine.Patch(typeof(HarvestOutputPatch), nameof(BeginHarvest)),
-                postfix: Machine.Patch(typeof(HarvestOutputPatch), nameof(EndHarvest)));
-            harmony.Patch(Machine.Method(typeof(AE_HarvestPlant), "DeliverAll"), prefix: Machine.Patch(typeof(HarvestOutputPatch), nameof(ScaleCrops)));
+            hooks.PatchOrThrow(typeof(HarvestOutputPatch), typeof(AE_HarvestPlant), "RollYield", prefix: nameof(BeginHarvest),
+                postfix: nameof(EndHarvest));
+            hooks.PatchOrThrow(typeof(HarvestOutputPatch), typeof(AE_HarvestPlant), "DeliverAll", prefix: nameof(ScaleCrops));
         });
     }
 
@@ -397,7 +403,7 @@ internal static class HarvestOutputPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _fail(ex);
         }
     }
 

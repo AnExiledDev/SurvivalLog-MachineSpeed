@@ -1,4 +1,6 @@
 using System;
+using ExiledToolkit.Game;
+using ExiledToolkit.Web;
 using GameCore.HotUpdate.Battle.Logic;
 using MachineSpeed.Core;
 using UnityEngine;
@@ -15,10 +17,14 @@ internal sealed class OverviewSession
     private const float OpenRefreshSeconds = 1f;
     private const float ClosedRefreshSeconds = 5f;
 
+    /// <summary>The name the window holds the game's hotkeys and clicks under while it is open.</summary>
+    private const string WindowName = "MachineSpeed.window";
+
     private readonly MachineReader _reader;
     private readonly Rusher _rusher;
     private readonly Collector _collector;
     private readonly OverviewPage _page;
+    private readonly PageMailbox _inbox;
     private readonly DoneToasts _toasts;
     private readonly DoneWatch _watch = new();
     private readonly Action<string> _log;
@@ -36,12 +42,13 @@ internal sealed class OverviewSession
     private bool _isScanning;
     private IntPtr _world = IntPtr.Zero;
 
-    public OverviewSession(MachineReader reader, OverviewPage page, Action<string> log)
+    public OverviewSession(MachineReader reader, OverviewPage page, PageMailbox inbox, Action<string> log)
     {
         _reader = reader;
         _rusher = new Rusher(reader, log);
         _collector = new Collector(reader, log);
         _page = page;
+        _inbox = inbox;
         _toasts = new DoneToasts(AskToOpen, log);
         _log = log;
     }
@@ -64,7 +71,10 @@ internal sealed class OverviewSession
 
         _page.KeepInstalled(now);
 
-        while (OverviewMessages.TryTake(out var command)) HandleSafely(command);
+        while (_inbox.TryTake(out var message))
+        {
+            if (OverviewCommand.Parse(message) is { } command) HandleSafely(command);
+        }
 
         if (_isOpenAsked)
         {
@@ -154,7 +164,7 @@ internal sealed class OverviewSession
         if (_isOpen)
         {
             _isOpen = false;
-            OverviewInputGate.WindowClosed();
+            InputGate.Closed(WindowName);
         }
 
         _sentLive = null;
@@ -302,7 +312,7 @@ internal sealed class OverviewSession
         }
 
         _isOpen = true;
-        OverviewInputGate.WindowOpened();
+        InputGate.Opened(WindowName);
         Show(read, nowSeconds, isOpening: true, isChinese);
         _nextRefreshAt = Time.unscaledTime + OpenRefreshSeconds;
         _log("Machines window opened");
@@ -313,7 +323,7 @@ internal sealed class OverviewSession
         if (!_isOpen) return;
 
         _isOpen = false;
-        OverviewInputGate.WindowClosed();
+        InputGate.Closed(WindowName);
         _page.Close();
     }
 

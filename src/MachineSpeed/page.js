@@ -5,7 +5,6 @@
 (function () {
   if (window.__slmachinespeed) return;
 
-  var POLL_MS = 500;
   var MARK = '__slmachinespeedPatched';
   var state = { shredder: null, brew: null, dye: null };
   var lastJson = '';
@@ -102,46 +101,32 @@
   // ===== Pages =====
 
   var PAGES = [
-    { key: 'brew', path: '/BrewPanel/', draw: 'renderFerment', fix: fixBrew },
-    { key: 'dye', path: '/DyePanel/', draw: 'renderProd', fix: fixDye },
-    { key: 'shredder', path: '/Shredder/', draw: 'renderProc', wraps: { mmss: shredderClock, fmtDur: shredderTip } }
+    { key: 'brew', address: /\/BrewPanel\//, draw: 'renderFerment', fix: fixBrew },
+    { key: 'dye', address: /\/DyePanel\//, draw: 'renderProd', fix: fixDye },
+    { key: 'shredder', address: /\/Shredder\//, draw: 'renderProc', wraps: { mmss: shredderClock, fmtDur: shredderTip } }
   ];
 
   var KEYS = ['shredder', 'brew', 'dye'];
-  var SEEN = '__slmachinespeedSeen';
   var patched = [];
+  // The Toolkit's watch on each panel's page; empty until its page API is there.
+  var watches = [];
 
-  function patchPages() {
-    var frames = document.getElementsByTagName('iframe');
+  // Asked by the Toolkit for each panel page it finds. With every machine at the game's pace there is nothing to put
+  // in, so the page is left exactly as the game draws it; set() asks again when that changes. False while the game has
+  // not set up the panel's draw function yet, so it is asked again at the next check.
+  function patchIn(page, doc) {
+    var w = doc.defaultView;
 
-    for (var i = 0; i < frames.length; i++) {
-      var w = null;
-      var path = null;
+    if (isAllOff() || !w || w[MARK]) return true;
+    if (typeof w[page.draw] !== 'function') return false;
 
-      try {
-        w = frames[i].contentWindow;
-        path = w ? String(w.location.pathname) : null;
-      } catch (e) {}
+    patch(w, page);
 
-      // A loaded page that is none of the panels is passed over until it goes to another address.
-      if (path === null || w[MARK] || w[SEEN] === path) continue;
+    return true;
+  }
 
-      var isPanel = false;
-
-      for (var p = 0; p < PAGES.length; p++) {
-        if (path.indexOf(PAGES[p].path) < 0) continue;
-
-        isPanel = true;
-
-        try {
-          if (typeof w[PAGES[p].draw] === 'function') patch(w, PAGES[p]);
-        } catch (e) {}
-      }
-
-      try {
-        if (!isPanel && w.document && w.document.readyState === 'complete') w[SEEN] = path;
-      } catch (e) {}
-    }
+  function askAgain() {
+    for (var i = 0; i < watches.length; i++) watches[i].refresh();
   }
 
   function patch(w, page) {
@@ -227,18 +212,17 @@
 
     lastJson = json;
     state = next || { shredder: null, brew: null, dye: null };
-    patchPages();
+    askAgain();
     redraw(changedKeys(before, state));
   }
 
-  // With every machine at the game's pace there is nothing to put in; set() looks for panels when that changes.
-  setInterval(function () {
-    if (isAllOff()) return;
-
-    try {
-      patchPages();
-    } catch (e) {}
-  }, POLL_MS);
+  // Runs once the Toolkit's page API is there: at once when its script ran first, else when it runs.
+  function startWithToolkit(etk) {
+    PAGES.forEach(function (page) {
+      watches.push(etk.watchPages(page.address, function (doc) { return patchIn(page, doc); }));
+    });
+  }
 
   window.__slmachinespeed = { set: set };
+  (window.ExiledToolkitReady = window.ExiledToolkitReady || []).push(startWithToolkit);
 })();

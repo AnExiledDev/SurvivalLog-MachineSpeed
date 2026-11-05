@@ -1,6 +1,5 @@
 using System;
-using System.Reflection;
-using HarmonyLib;
+using ExiledToolkit.Kit;
 
 namespace MachineSpeed.Adapters;
 
@@ -18,13 +17,13 @@ internal sealed class MachineHook
         Failed,
     }
 
-    private readonly SpeedLog _log;
+    private readonly ModLog _log;
     private readonly string _name;
     private readonly Action _install;
     private readonly Action? _installDisplay;
     private HookState _state = HookState.Waiting;
 
-    public MachineHook(SpeedLog log, string name, Action install, Action? installDisplay = null)
+    public MachineHook(ModLog log, string name, Action install, Action? installDisplay = null)
     {
         _log = log;
         _name = name;
@@ -82,14 +81,6 @@ internal sealed class MachineHook
             _log.Write($"{_name} x{speed.Value:0.##}, its panel still shows the game's time ({ex.Message})");
         }
     }
-}
-
-internal static class Machine
-{
-    public static MethodInfo Method(Type type, string name) =>
-        AccessTools.Method(type, name) ?? throw new MissingMethodException($"{type.Name}.{name}");
-
-    public static HarmonyMethod Patch(Type patchClass, string method) => new(patchClass, method);
 }
 
 /// <summary>

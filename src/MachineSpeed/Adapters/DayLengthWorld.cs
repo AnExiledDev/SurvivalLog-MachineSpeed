@@ -1,8 +1,9 @@
 using System;
 using BepInEx.Unity.IL2CPP;
+using ExiledToolkit.Game;
+using ExiledToolkit.Kit;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
-using HarmonyLib;
 using MachineSpeed.Core;
 
 namespace MachineSpeed.Adapters;
@@ -18,8 +19,8 @@ internal static class DayLengthWorld
 {
     public const string DayLengthGuid = "com.dev.survivallog.daylength";
 
-    private static Harmony? _harmony;
-    private static SpeedLog? _log;
+    private static PatchKit? _hooks;
+    private static ModLog? _log;
     private static Action _changed = () => { };
     private static bool _isFollowing;
     private static bool _isHooked;
@@ -30,7 +31,7 @@ internal static class DayLengthWorld
     private static bool IsDayLengthInstalled => IL2CPPChainloader.Instance.Plugins.ContainsKey(DayLengthGuid);
 
     /// <summary><paramref name="changed"/> is called on the main thread whenever the factor changes.</summary>
-    public static void Apply(Harmony harmony, SpeedLog log, Action changed) => (_harmony, _log, _changed) = (harmony, log, changed);
+    public static void Apply(PatchKit hooks, ModLog log, Action changed) => (_hooks, _log, _changed) = (hooks, log, changed);
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>
     public static void Use(bool follow)
@@ -58,17 +59,10 @@ internal static class DayLengthWorld
 
     private static bool Hook()
     {
-        if (_isHooked || _harmony == null) return _isHooked;
+        if (_isHooked || _hooks == null) return _isHooked;
 
-        try
-        {
-            _harmony.Patch(Machine.Method(typeof(BattleLogicWorld), nameof(BattleLogicWorld.Initialize)), postfix: Machine.Patch(typeof(DayLengthWorld), nameof(AfterWorldStart)));
-            _isHooked = true;
-        }
-        catch (Exception ex)
-        {
-            _log?.Write($"could not hook the world start, machine speeds do not follow Day Length: {ex.Message}");
-        }
+        _isHooked = _hooks.Patch(typeof(DayLengthWorld), typeof(BattleLogicWorld), nameof(BattleLogicWorld.Initialize), postfix: nameof(AfterWorldStart),
+            consequence: "machine speeds do not follow Day Length");
 
         return _isHooked;
     }

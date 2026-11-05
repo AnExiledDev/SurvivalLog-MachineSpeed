@@ -1,5 +1,6 @@
-// Just enough of Root.html and the game's HUD page (UI/CoreUI/CoreUI1.html) for overview.js to run in Jint: the root
-// document with its page iframes, the vuplex bridge, and clicks that bubble. Test code only; nothing here ships.
+// Just enough of Root.html, the game's HUD page (UI/CoreUI/CoreUI1.html) and its machine panels for overview.js,
+// page.js and Exiled's Toolkit's page API to run in Jint: the root document with its page iframes, the vuplex bridge,
+// and clicks that bubble. Test code only; nothing here ships.
 var window = this;
 
 var location = { protocol: 'https:' };
@@ -12,7 +13,7 @@ function setInterval(callback) {
   return intervals.length;
 }
 
-// One run of every interval the script set, which is how its 400 ms page check runs.
+// One run of every interval the scripts set, which is how the Toolkit's 250 ms page check runs.
 function poll() {
   intervals.slice().forEach(function (callback) { callback(); });
 }
@@ -49,7 +50,8 @@ var FakeElement = class {
     this.disabled = false;
     this.scrollTop = 0;
     this.classList = {
-      contains: function (name) { return element.classes.indexOf(name) >= 0; }
+      contains: function (name) { return element.classes.indexOf(name) >= 0; },
+      add: function (name) { if (element.classes.indexOf(name) < 0) element.classes.push(name); }
     };
   }
 
@@ -221,12 +223,15 @@ function descendantsOf(roots) {
   return found;
 }
 
+// href is the page's address; the Toolkit's page check skips a document without one, as it skips the about:blank a new
+// iframe holds first. defaultView is the page's window, where a game page keeps its draw functions and state.
 var FakeDocument = class {
-  constructor() {
+  constructor(href) {
     this.head = new FakeElement('head');
     this.body = new FakeElement('body');
     this.head.isRoot = true;
     this.body.isRoot = true;
+    this.defaultView = { location: { href: href || 'about:blank' }, document: this };
   }
 
   createElement(tagName) { return new FakeElement(tagName); }
@@ -258,6 +263,14 @@ var FakeDocument = class {
   querySelector(selector) {
     return this.querySelectorAll(selector)[0] || null;
   }
+
+  // Not counted as a search: in a browser this is a live list the document keeps up to date, which is what the
+  // Toolkit's page check reads each time.
+  getElementsByTagName(tagName) {
+    var wanted = tagName.toUpperCase();
+
+    return descendantsOf([this.head, this.body]).filter(function (element) { return element.tagName === wanted; });
+  }
 };
 
 // Root.html's own document, which holds the page iframes.
@@ -276,7 +289,7 @@ function openHud() {
   var column = new FakeElement('div');
 
   frame.src = 'https://game.local/UI/CoreUI/CoreUI1.html';
-  frame.contentDocument = new FakeDocument();
+  frame.contentDocument = new FakeDocument(frame.src);
   column.className = 'vertical-tools';
   column.appendChild(new FakeElement('button'));
   frame.contentDocument.body.appendChild(column);
@@ -285,7 +298,37 @@ function openHud() {
 }
 
 function hudPage() {
-  return document.querySelector('iframe').contentDocument;
+  return document.querySelectorAll('iframe').filter(function (frame) { return /CoreUI1/.test(frame.src); })[0].contentDocument;
+}
+
+// The game opening a machine panel (UI/<name>/<name>.html) in Root.html; its window starts with nothing the game sets up.
+function openPanel(name) {
+  var frame = document.body.appendChild(new FakeElement('iframe'));
+
+  frame.src = 'https://game.local/UI/' + name + '/' + name + '.html';
+  frame.contentDocument = new FakeDocument(frame.src);
+
+  return frame.contentDocument.defaultView;
+}
+
+// The brewing barrel's panel as the game draws it, mid-brew: its time line reads the game's whole hours. drawn counts
+// the game's own draws.
+function openBrewPanel() {
+  var panel = openPanel('BrewPanel');
+  var time = panel.document.createElement('span');
+
+  time.id = 'timeNum';
+  panel.document.body.appendChild(time);
+  panel.State = { brewState: 1 };
+  panel.i18nText = { remainTemplate: 'Left {0}', unitDay: 'd' };
+  panel.drawn = 0;
+  panel.renderFerment = function () {
+    panel.drawn++;
+    time.textContent = 'Left 3h';
+  };
+  panel.renderFerment();
+
+  return panel;
 }
 
 function hudButton() {
