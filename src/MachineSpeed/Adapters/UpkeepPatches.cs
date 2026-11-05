@@ -80,6 +80,9 @@ internal static class RobotChargingPatch
             harmony.Patch(Machine.Method(typeof(RobotComponent), "ResetNumericModuleState"), postfix: Machine.Patch(typeof(RobotChargingPatch), nameof(ScaleCharging)));
             harmony.Patch(Machine.Method(typeof(RobotComponent), "RecalcNumericModules"), postfix: Machine.Patch(typeof(RobotChargingPatch), nameof(ScaleCharging)));
         });
+        // In from the start, so every loaded robot is known and moved over when the setting changes, including a
+        // world's own setting that arrives after its robots have loaded. At 1 the hook hands back the game's rate.
+        _hook.InstallNow();
     }
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>

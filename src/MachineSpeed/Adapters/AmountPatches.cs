@@ -3,6 +3,7 @@ using BepInEx.Configuration;
 using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
 using MachineSpeed.Core;
+using static MachineSpeed.Adapters.WorldRule;
 
 namespace MachineSpeed.Adapters;
 
@@ -52,8 +53,8 @@ internal static class AmountPatches
             "The most bottles a brewing barrel can make in one brew: 1 is the game's limit, 2 doubles it, rounded to whole bottles. The extra bottles still need enough ingredients, and the barrel's ingredient slots do not change. From 1 to 100: less than 1 counts as 1, more than 100 counts as 100.",
             "酿酒桶一次酿造最多能出的瓶数：1 为游戏上限，2 为两倍，按整瓶取整。多出的瓶数仍需足够的原料，酿酒桶的原料格数不变。范围 1 到 100：小于 1 按 1 计算，大于 100 按 100 计算。");
         Watch(config, log, "RobotCharging", 0.1f, 100f, RobotChargingPatch.Use,
-            $"How fast robots charge: 1 is the game's rate, 2 is twice as fast. Drones do not charge, so they are not changed. The first change away from 1 reaches robots already built when their modules change or a save is loaded. {RateRange}",
-            $"机器人充电的速度：1 为游戏原速，2 为两倍速。无人机不充电，因此不受影响。首次从 1 改为其他值时，已有的机器人会在模块变动或读档后生效。{RateRangeChinese}");
+            $"How fast robots charge: 1 is the game's rate, 2 is twice as fast. Drones do not charge, so they are not changed. {RateRange}",
+            $"机器人充电的速度：1 为游戏原速，2 为两倍速。无人机不充电，因此不受影响。{RateRangeChinese}");
         Watch(config, log, "FridgeStrength", 0.1f, 100f, FridgeStrengthPatch.Use,
             $"How strongly powered fridges and freezers slow spoiling: 2 makes food in them spoil half as fast, 0.5 twice as fast. Food in a fridge never spoils faster than outside one, or slower than in a sealed cold store. In a cold room the game uses whichever is colder, the room or the fridge. {RateRange}",
             $"通电的冰箱和冰柜减缓食物腐烂的强度：2 让其中食物的腐烂速度减半，0.5 让腐烂速度加倍。冰箱里的食物不会比冰箱外腐烂得更快，也不会比密封冷库里更慢。在寒冷房间里，游戏取房间和冰箱中更冷的一方。{RateRangeChinese}");
@@ -64,7 +65,7 @@ internal static class AmountPatches
 
     private static void Watch(ConfigFile config, SpeedLog log, string key, float least, float most, Action<Multiplier> use, string english, string chinese)
     {
-        var entry = config.Bind(Section, key, 1f, $"{english}\n{chinese}");
+        var entry = config.Bind(Section, key, 1f, Rule($"{english}\n{chinese}"));
 
         OptionalLive.Watch(entry, value =>
         {
@@ -106,6 +107,39 @@ internal sealed class AmountHook
     }
 
     public bool IsIn => _state == HookState.In;
+
+    /// <summary>
+    /// Puts the hooks in at start, whatever the setting, for an amount the game works out once and keeps. A robot's
+    /// charging rate is worked out when a save loads, which can come before the world's own setting arrives, so the
+    /// hook has to be in already for a later change to reach it.
+    /// </summary>
+    public void InstallNow()
+    {
+        if (_state != HookState.Waiting) return;
+
+        try
+        {
+            _install();
+        }
+        catch (Exception ex)
+        {
+            _state = HookState.Failed;
+            _log.Write($"could not hook {_name}, it stays at the game's amount: {ex.Message}");
+
+            return;
+        }
+
+        _state = HookState.In;
+
+        try
+        {
+            _installDisplay?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            _log.Write($"{_name}: its panel still shows the game's value ({ex.Message})");
+        }
+    }
 
     /// <summary>Called on the main thread at start and after each change of the setting.</summary>
     public void Use(Multiplier multiplier)

@@ -6,6 +6,7 @@ using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
 using MachineSpeed.Adapters;
 using MachineSpeed.Core;
+using static MachineSpeed.Adapters.WorldRule;
 
 namespace MachineSpeed;
 
@@ -15,7 +16,7 @@ namespace MachineSpeed;
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.machinespeed";
-    private const string Version = "0.8.1";
+    private const string Version = "0.9.0";
     private const string Section = "Machines";
     private const string ActionSpeedConfig = "com.dev.survivallog.actionspeed.cfg";
 
@@ -39,15 +40,15 @@ public sealed class Plugin : BasePlugin
         var compost = Bind("Compost", "compost bins turning food into compost.", "堆肥箱把食物变成堆肥的速度。");
         OptionalUiSize.Bind(Config);
 
-        var cookingFuel = Config.Bind(Section, "CookingFuel", 1f,
+        var cookingFuel = Config.Bind(Section, "CookingFuel", 1f, Rule(
             "How much fuel a stove or hot pot uses for each dish, whatever the cooking speed: 1 is the game's amount, 0.5 is half, 0 uses none, 2 is twice as much. From 0 to 20; less than 0 counts as 1.\n" +
-            "燃气灶或火锅每道菜消耗的燃料，与烹饪速度无关：1 为游戏原量，0.5 为一半，0 不消耗，2 为两倍。范围 0 到 20，小于 0 按 1 计算。");
-        var preset = Config.Bind(Section, "Preset", Preset.Custom,
+            "燃气灶或火锅每道菜消耗的燃料，与烹饪速度无关：1 为游戏原量，0.5 为一半，0 不消耗，2 为两倍。范围 0 到 20，小于 0 按 1 计算。"));
+        var preset = Config.Bind(Section, "Preset", Preset.Custom, Rule(
             "Sets every machine speed at once. Custom uses each machine's own speed setting; Vanilla is the game's pace; Relaxed is 2x; Fast is 5x; Instant is 100000x, almost instant. CookingFuel keeps its own setting.\n" +
-            "一次设置所有机器的速度。Custom 使用各台机器自己的速度设置；Vanilla 为游戏原速；Relaxed 为两倍速；Fast 为五倍速；Instant 为 100000 倍速，几乎立即完成。CookingFuel 仍按自己的设置。");
-        var followDayLength = Config.Bind(Section, "FollowDayLength", false,
+            "一次设置所有机器的速度。Custom 使用各台机器自己的速度设置；Vanilla 为游戏原速；Relaxed 为两倍速；Fast 为五倍速；Instant 为 100000 倍速，几乎立即完成。CookingFuel 仍按自己的设置。"));
+        var followDayLength = Config.Bind(Section, "FollowDayLength", false, Rule(
             "When the Day Length mod makes days longer or shorter, machines keep their pace in real time: with days twice as long, every machine speed is doubled, on top of the preset. Day Length applies its setting when a save loads, and this follows it from then. Does nothing without Day Length. CookingFuel is not changed.\n" +
-            "当「昼夜时长」模组让一天变长或变短时，机器在现实时间里保持原来的工作节奏：一天变为两倍长时，所有机器速度也翻倍，并叠加在预设之上。「昼夜时长」在读取存档时应用其设置，本项从那时起跟随。未安装「昼夜时长」时不起作用。CookingFuel 不受影响。");
+            "当「昼夜时长」模组让一天变长或变短时，机器在现实时间里保持原来的工作节奏：一天变为两倍长时，所有机器速度也翻倍，并叠加在预设之上。「昼夜时长」在读取存档时应用其设置，本项从那时起跟随。未安装「昼夜时长」时不起作用。CookingFuel 不受影响。"));
         var shredderAutoStart = Config.Bind(Section, "ShredderAutoStart", false,
             "Start an idle shredder by itself when you put items into it, as if you pressed Start. Taking items out does not start it, so a shredder you stopped stays stopped until you add more. It still needs power and room for what it makes.\n" +
             "向闲置的粉碎机放入物品时自动开始粉碎，如同按下开始按钮。取出物品不会让它开始，所以你停下的粉碎机在再次放入物品前保持停止。粉碎机仍需要电力和放产物的空间。");
@@ -114,7 +115,7 @@ public sealed class Plugin : BasePlugin
     }
 
     private ConfigEntry<float> Bind(string key, string work, string workChinese) =>
-        Config.Bind(Section, key, 1f, $"Speed of {work} {Range}\n{workChinese}{RangeChinese}");
+        Config.Bind(Section, key, 1f, Rule($"Speed of {work} {Range}\n{workChinese}{RangeChinese}"));
 
     /// <summary>Brewing and cooking used to be Action Speed settings; the first start carries a player's values over.</summary>
     private void ImportFromActionSpeed(ConfigEntry<float> brewing, ConfigEntry<float> cooking, Action<string> log)
