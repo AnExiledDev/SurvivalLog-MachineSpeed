@@ -57,6 +57,7 @@ Works in English and Chinese.
 [*][url=https://www.nexusmods.com/survivallog/mods/12]BepInEx for Survival Log[/url] (BepInEx 6.0.0-be.788, IL2CPP). Install it first.[/*]
 [*][url=https://www.nexusmods.com/survivallog/mods/61]Exiled's Toolkit[/url] 0.19.0 or newer. Machine Speed does not load without it. It shows the done notices and Machine Speed's other messages as toasts, applies settings changed on the Mod Manager's Mods screen without a restart, and its UI size setting sizes the Machines window.[/*]
 [*]Optional: Day Length, for [font=Courier New]FollowDayLength[/font].[/*]
+[*]Optional: [url=https://www.nexusmods.com/survivallog/mods/73]Mod Manager[/url]. With it, you can change every setting in game on its Mods screen and see what each one does, without opening the config file.[/*]
 [/list]
 
 [size=5]Installation[/size]
@@ -136,6 +137,7 @@ Machine Speed 不会往存档里写入自己的数据，也不会修改游戏文
 [*][url=https://www.nexusmods.com/survivallog/mods/12]BepInEx for Survival Log[/url]（BepInEx 6.0.0-be.788，IL2CPP），请先安装。[/*]
 [*][url=https://www.nexusmods.com/survivallog/mods/61]Exiled's Toolkit[/url] 0.19.0 或更新版本。没有它本模组不会加载。它把完成通知和本模组的其他提示以弹窗显示，让在 Mod Manager 的「模组」界面改动的设置无需重启游戏即可生效，它的界面大小设置还能调整「机器总览」窗口的大小。[/*]
 [*]可选：「昼夜时长」（Day Length），用于 [font=Courier New]FollowDayLength[/font]。[/*]
+[*]可选：[url=https://www.nexusmods.com/survivallog/mods/73]Mod Manager[/url]。装了它，可以在游戏里它的「模组」界面修改每项设置，并看到每项的说明，不用打开配置文件。[/*]
 [/list]
 
 [size=5]安装[/size]
