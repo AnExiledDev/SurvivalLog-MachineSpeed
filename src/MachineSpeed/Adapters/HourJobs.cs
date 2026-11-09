@@ -149,7 +149,7 @@ public sealed class MachineTicker : MonoBehaviour
 
 /// <summary>
 /// A brew finishes once its whole hours have passed since its start hour, checked by the game once an hour. Moving
-/// the start hour back moves the brew on; the game's own finish is then asked for at once.
+/// the start hour back moves the brew on; the game's finish is then asked for at once.
 /// </summary>
 internal sealed class BrewJob : IHourJob
 {
@@ -205,7 +205,7 @@ internal sealed class BrewJob : IHourJob
 
 /// <summary>
 /// A dye job finishes a bucket each time its hours per bucket pass since its start hour, checked by the game once an
-/// hour. Moving the start hour back moves every bucket on; the game's own check is then asked for at once.
+/// hour. Moving the start hour back moves every bucket on; the game's check is then asked for at once.
 /// </summary>
 internal sealed class DyeJob : IHourJob
 {
@@ -262,7 +262,7 @@ internal sealed class DyeJob : IHourJob
 
 /// <summary>
 /// Food in a compost bin rots by the hours since its start time, checked by the game once an hour, and rotted food
-/// turns into compost there. Moving the start time back rots it sooner; the game's own rot check is then asked for at
+/// turns into compost there. Moving the start time back rots it sooner; the game's rot check is then asked for at
 /// once. Only food the game would rot is moved, the same test its hourly rot check makes.
 /// </summary>
 internal sealed class CompostJob : IHourJob

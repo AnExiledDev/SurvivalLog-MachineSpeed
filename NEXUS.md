@@ -30,7 +30,7 @@ Machine Speed lets you choose how fast each machine at your base works. 2 means 
 [/list]
 A shred, ration batch, drone trip or cook that is already running keeps the length it started with. Brews, dye jobs, compost bins and plants follow a new speed straight away, including the ones already running.
 
-Machine Speed writes no data of its own into your save and does not edit game files. A job's sped-up length is held by the job, so it can end up in your save. You can remove the mod at any time; jobs started after that take the game's own time again.
+Machine Speed writes no data of its own into your save and does not edit game files. A job's sped-up length is held by the job, so it can end up in your save. You can remove the mod at any time; jobs started after that take the game's time again.
 
 Works in English and Chinese.
 
@@ -41,11 +41,11 @@ Works in English and Chinese.
 [*]Change [font=Courier New]Cooking[/font] between games only when no dish is cooking. A dish saved mid-cook and loaded at another speed burns its fuel at the new speed, so it can use a lot of fuel at once (or very little).[/*]
 [*]Plants planted at another speed keep it until harvest when [font=Courier New]PlantGrowth[/font] is set back to 1 between games. Within a game, setting it back to 1 moves them to the game's pace.[/*]
 [*]Fridges in a cold room use whichever is colder, the room or the fridge; [font=Courier New]FridgeStrength[/font] does not stack with the room's cold.[/*]
-[*]The wave report's wear line still counts the game's own wear when [font=Courier New]EquipmentWear[/font] is changed.[/*]
+[*]The wave report's wear line still counts the game's wear when [font=Courier New]EquipmentWear[/font] is changed.[/*]
 [*]Compost that does not fit in the bin with [font=Courier New]CompostOutput[/font] above 1 is lost.[/*]
 [*]The Ration Press panel shows the game's output before [font=Courier New]RationPressOutput[/font]; the batch gives the multiplied amount.[/*]
 [*]A rushed job also shows its done notice.[/*]
-[*]With [font=Courier New]FinishClock[/font] on, the game's own shredder, brewing and dye panels still show the time left.[/*]
+[*]With [font=Courier New]FinishClock[/font] on, the game's shredder, brewing and dye panels still show the time left.[/*]
 [/list]
 
 [center][img]https://sldb.core-directive.com/img/mods-banner.jpg[/img]

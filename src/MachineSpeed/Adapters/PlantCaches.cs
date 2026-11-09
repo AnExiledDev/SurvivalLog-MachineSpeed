@@ -48,7 +48,7 @@ internal static class PlantCaches
         }
     }
 
-    // A plant is marked whether or not it changed, so the game's own small changes (power, the greenhouse) never make
+    // A plant is marked whether or not it changed, so the game's small changes (power, the greenhouse) never make
     // it flip back and forth.
     private static bool IsChecked(long id, Speed speed) => CheckedAtSpeed.TryGetValue(id, out var checkedAt) && checkedAt == speed.Value;
 

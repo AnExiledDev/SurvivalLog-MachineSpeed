@@ -6,7 +6,7 @@ namespace MachineSpeed.Adapters;
 /// <summary>
 /// One machine's hooks, put in the first time its speed leaves the game's pace, so a machine never sped up is never
 /// hooked and keeps exactly the game's timing. Once in, the hooks stay: at the game's pace every scaling hands back the
-/// game's own value. Every hook fails soft: a machine it cannot hook keeps the game's pace.
+/// game's value. Every hook fails soft: a machine it cannot hook keeps the game's pace.
 /// </summary>
 internal sealed class MachineHook
 {

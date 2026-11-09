@@ -10,7 +10,7 @@ using MachineSpeed.Core;
 
 namespace MachineSpeed.Adapters;
 
-// How much a machine holds or uses. Every patch runs inside the game's own call, so nothing may escape it.
+// How much a machine holds or uses. Every patch runs inside the game's call, so nothing may escape it.
 
 /// <summary>
 /// A brewing barrel's bottle limit is a game setting read through one lookup, by the brew preview, the panel and the
@@ -141,10 +141,10 @@ internal static class RobotChargingPatch
 /// How fast food spoils in a powered fridge or freezer is the fridge's cold rate from the furniture table, read when an
 /// item's spoil rate is worked out. The rate is divided for the length of that one call and put back after it, so
 /// everything else that reads the table (which storage counts as a fridge, the freezer labels) sees the game's value.
-/// The game's own rules still apply: the fridge is only used while powered, and a cold room colder than the fridge
+/// The game's rules still apply: the fridge is only used while powered, and a cold room colder than the fridge
 /// wins. The panels' preservation figures are brought in step.
 /// The fridge talent is the exception: the game applies it after reading the rate and never lets it go under a tenth,
-/// which would undo the strength. So the talent goes into the rate here, and the game's own talent read for that call
+/// which would undo the strength. So the talent goes into the rate here, and the game's talent read for that call
 /// answers 0.
 /// </summary>
 internal static class FridgeStrengthPatch

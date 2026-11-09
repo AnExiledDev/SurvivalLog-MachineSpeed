@@ -71,7 +71,7 @@ public readonly record struct HeadBar(float Total, float Elapsed)
 /// <summary>
 /// A plant keeps its growth time from when it was planted, so one planted at another speed grows, and counts down on
 /// its head bar, at that old speed. Its time is put right by keeping how far it has grown and changing what it grows
-/// toward. Small differences are the game's own (power, the greenhouse) and are left to it.
+/// toward. Small differences are the game's (power, the greenhouse) and are left to it.
 /// </summary>
 public static class PlantResync
 {

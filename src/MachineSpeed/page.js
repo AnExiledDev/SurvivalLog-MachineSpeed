@@ -170,7 +170,7 @@
     } catch (e) {}
   }
 
-  // Panels already open whose times changed are drawn again by the game's own function, which now ends with the fix.
+  // Panels already open whose times changed are drawn again by the game's function, which now ends with the fix.
   // A panel whose machine's times are the same is left alone.
   function redraw(changed) {
     var open = [];

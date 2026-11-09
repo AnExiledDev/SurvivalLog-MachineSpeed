@@ -29,7 +29,7 @@ Each machine has its own speed. 2 means a job takes half the game time, 0.5 mean
 - **Finish clock**: `FinishClock` shows the game time a job finishes instead of the time left.
 - **Log file**: what the mod set up at startup, and the first job each machine did with it, go to `BepInEx\machine-speed.log`.
 
-Speeds changed on the Mod Manager's Mods screen take effect at once; a change made in the file applies at the next game start. With Exiled's Toolkit 0.17.0 or newer, each world can keep its own machine settings: every setting in Machines and Amounts except `ShredderAutoStart`, plus `RushPointsPerHour`. Pick them for a new world in Customizable Difficulty, or, while you play, change them for that world alone on the Mods screen. `ShredderAutoStart`, the toasts, the finish clock and the UI size stay the same for every world. A shred, ration batch, drone trip or cook that is already running keeps the length it started with. Brews, dye jobs, compost bins and plants follow the new speed straight away, including the ones already running. Machine Speed writes no data of its own into your save and does not edit game files. A job's sped-up length is held by the job, so it can end up in your save. You can remove the mod at any time; jobs started after that take the game's own time again.
+Speeds changed on the Mod Manager's Mods screen take effect at once; a change made in the file applies at the next game start. With Exiled's Toolkit 0.17.0 or newer, each world can keep its own machine settings: every setting in Machines and Amounts except `ShredderAutoStart`, plus `RushPointsPerHour`. Pick them for a new world in Customizable Difficulty, or, while you play, change them for that world alone on the Mods screen. `ShredderAutoStart`, the toasts, the finish clock and the UI size stay the same for every world. A shred, ration batch, drone trip or cook that is already running keeps the length it started with. Brews, dye jobs, compost bins and plants follow the new speed straight away, including the ones already running. Machine Speed writes no data of its own into your save and does not edit game files. A job's sped-up length is held by the job, so it can end up in your save. You can remove the mod at any time; jobs started after that take the game's time again.
 
 All settings are listed in [CONFIG.md](CONFIG.md).
 
@@ -41,11 +41,11 @@ All settings are listed in [CONFIG.md](CONFIG.md).
 - Plants planted at another speed keep it until harvest when `PlantGrowth` is set back to 1 between games. Within a game, setting it back to 1 moves them to the game's pace.
 
 - Fridges in a cold room use whichever is colder, the room or the fridge; `FridgeStrength` does not stack with the room's cold.
-- The wave report's wear line still counts the game's own wear when `EquipmentWear` is changed.
+- The wave report's wear line still counts the game's wear when `EquipmentWear` is changed.
 - Compost that does not fit in the bin with `CompostOutput` above 1 is lost.
 - The Ration Press panel shows the game's output before `RationPressOutput`; the batch gives the multiplied amount.
 - A rushed job also shows its done notice.
-- With `FinishClock` on, the game's own shredder, brewing and dye panels still show the time left.
+- With `FinishClock` on, the game's shredder, brewing and dye panels still show the time left.
 
 ## Requirements
 

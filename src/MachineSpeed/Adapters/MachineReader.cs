@@ -13,7 +13,7 @@ namespace MachineSpeed.Adapters;
 internal sealed record FoundMachine(BattleLogicWorld World, Furniture Furniture, MachineRow Row, int NowSeconds);
 
 /// <summary>
-/// Reads every machine at home the way the game's own HUD finds furniture: placed, at home, on an unlocked floor and in
+/// Reads every machine at home the way the game's HUD finds furniture: placed, at home, on an unlocked floor and in
 /// an unlocked area. Times are read from the machines' own fields, which Machine Speed's patches already keep at the
 /// machine's speed. A machine that fails to read is left out, and each distinct failure is logged once.
 /// The read with the window shut is spread over a few frames, about a millisecond of each, so a big base never costs

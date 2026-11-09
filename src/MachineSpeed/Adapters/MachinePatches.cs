@@ -9,7 +9,7 @@ using MachineSpeed.Core;
 namespace MachineSpeed.Adapters;
 
 // One small class per machine because Harmony patches are static and each machine keeps its own speed. Every patch
-// runs inside the game's own call, so nothing may escape it.
+// runs inside the game's call, so nothing may escape it.
 
 /// <summary>
 /// The shredder hands each item's job its length in game seconds when it starts. The panel's time for the next item
@@ -319,7 +319,7 @@ internal static class CookingFuelPatch
 
     /// <summary>
     /// Called on the main thread at start and after each change of either setting. Like the machines, the hook goes in
-    /// the first time it changes anything, and at the game's pace and amount it hands back the game's own rate.
+    /// the first time it changes anything, and at the game's pace and amount it hands back the game's rate.
     /// </summary>
     public static void Use(Speed cooking, FuelUse fuel)
     {

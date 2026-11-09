@@ -2,7 +2,7 @@
 
 Settings live in `BepInEx\config\com.dev.survivallog.machinespeed.cfg`, created the first time the game starts with the mod. Change them in game on the Mod Manager's Mods screen, where they take effect at once, or edit the file while the game is closed. With Exiled's Toolkit 0.17.0 or newer, each world can keep its own machine settings: every setting in Machines and Amounts except `ShredderAutoStart`, plus `RushPointsPerHour`. Pick them for a new world in Customizable Difficulty, or, while you play, change them for that world alone on the Mods screen. `ShredderAutoStart`, the toasts, the finish clock and the UI size stay the same for every world. Delete the file to get the defaults back. Each setting in the file says what it does, in English and Chinese.
 
-Every speed goes from 0.25 to 100000. 1 is the game's own pace, and at 1 the mod leaves that machine alone. 2 takes half the game time, 0.5 takes twice as long, and a very high speed makes a job almost instant (the shortest job is 1 game second). 0 or less counts as 1.
+Every speed goes from 0.25 to 100000. 1 is the game's pace, and at 1 the mod leaves that machine alone. 2 takes half the game time, 0.5 takes twice as long, and a very high speed makes a job almost instant (the shortest job is 1 game second). 0 or less counts as 1.
 
 Generator fuel burn and generator efficiency are now in the Power Manager mod, which carries over your values the first time it starts.
 

@@ -11,7 +11,7 @@ using Il2CppYields = Il2CppSystem.Collections.Generic.List<GameCore.HotUpdate.Sh
 namespace MachineSpeed.Adapters;
 
 // How much a machine makes. Each class keeps its own multiplier and its own carried fractions, so 1.5 on single items
-// gives 1, 2, 1, 2 for each kind of item. Every patch runs inside the game's own call, so nothing may escape it.
+// gives 1, 2, 1, 2 for each kind of item. Every patch runs inside the game's call, so nothing may escape it.
 
 /// <summary>
 /// The shredder's yields for an item are worked out fresh on every call, for the panel, the fit check and the payout

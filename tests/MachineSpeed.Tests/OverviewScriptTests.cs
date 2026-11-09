@@ -269,7 +269,7 @@ public class OverviewCollectTests
 
 public class PanelTimesTests
 {
-    // 5400 game seconds left on the brew: 1 hour 30 minutes, where the game's own panel reads whole hours.
+    // 5400 game seconds left on the brew: 1 hour 30 minutes, where the game's panel reads whole hours.
     private const string Brewing = "{\"shredder\":null,\"brew\":{\"preview\":null,\"remain\":5400},\"dye\":null}";
     private const string GamePace = "{\"shredder\":null,\"brew\":null,\"dye\":null}";
     private const string BrewTime = "brew.document.getElementById('timeNum').textContent";

@@ -1,7 +1,7 @@
 namespace MachineSpeed.Core;
 
 /// <summary>
-/// Which rows get a Collect button. Collect queues the game's own take-out, the walk and pick-up a click on the
+/// Which rows get a Collect button. Collect queues the game's take-out, the walk and pick-up a click on the
 /// machine queues, and the game has that only for a stove's dish and a brewing barrel's brew. The other machines'
 /// products are taken out in their own panels.
 /// </summary>

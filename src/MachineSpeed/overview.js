@@ -1,6 +1,6 @@
 // Machine Speed's Machines window. Runs in Root.html, the document every game page iframe sits in. Draws the window
 // over all of them in the gold style the other hub windows share, and puts a button with a
-// working and needs-you counts in the HUD's tool column, built like the game's own buttons there. Every word and number comes from the
+// working and needs-you counts in the HUD's tool column, built like the game's buttons there. Every word and number comes from the
 // plugin (OverviewView.cs); this script only draws them. Talks to the plugin through Exiled's Toolkit's page API
 // ("slmod|machinespeed|<verb>") and is driven by window.__slmachineoverview.
 (function () {

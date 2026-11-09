@@ -11,7 +11,7 @@ namespace MachineSpeed.Adapters;
 /// <summary>
 /// Starts an idle shredder when the player puts items into its hopper. The game rebuilds the shredder's panel after
 /// every hopper change, so the panel's item count is remembered per shredder and a change that raised it is a refill.
-/// The start is the game's own Start button, so a shredder with no power or no room in its tray stays idle as usual.
+/// The start is the game's Start button, so a shredder with no power or no room in its tray stays idle as usual.
 /// The hooks go in the first time the setting is on.
 /// </summary>
 internal static class ShredderAutoStart

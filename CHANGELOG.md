@@ -41,7 +41,7 @@
 ## 0.5.5
 
 - The Machines window and its pop-up messages can be drawn bigger or smaller with the UI size setting of Exiled's Toolkit 0.10.0 or newer. A change shows at once, and the window only grows as far as it still fits on the screen.
-- The Machines button keeps the game's size, like the game's own buttons around it.
+- The Machines button keeps the game's size, like the game's buttons around it.
 - Made for Survival Log 1.1.19611.
 
 ## 0.5.4
@@ -124,4 +124,4 @@
 - First release.
 - Speeds for the shredder, the Ration Press, the dye vat, plant growth, fuel generator fuel burn, drone trips, brewing and cooking.
 - Brewing and cooking come from Action Speed, and your values for them are taken from its config the first time the mod starts.
-- Every speed defaults to the game's own pace.
+- Every speed defaults to the game's pace.

@@ -6,7 +6,7 @@ namespace MachineSpeed.Adapters;
 
 /// <summary>
 /// Finishes one running job now for survival points. Each machine is finished by moving its start (or a drone's
-/// return) back so that the game's own update, or its own finish call, completes the job the usual way: the product
+/// return) back so that the game's update, or its own finish call, completes the job the usual way: the product
 /// lands where the game puts it and every follow-up the game runs still runs. Points are spent only after the job was
 /// finished, so a finish that throws costs nothing.
 /// </summary>

@@ -312,7 +312,7 @@ function openPanel(name) {
 }
 
 // The brewing barrel's panel as the game draws it, mid-brew: its time line reads the game's whole hours. drawn counts
-// the game's own draws.
+// the game's draws.
 function openBrewPanel() {
   var panel = openPanel('BrewPanel');
   var time = panel.document.createElement('span');

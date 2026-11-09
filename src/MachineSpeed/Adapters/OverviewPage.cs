@@ -5,7 +5,7 @@ using MachineSpeed.Core;
 namespace MachineSpeed.Adapters;
 
 /// <summary>
-/// The Machines window's half that lives in the game's web UI: overview.js, run in the root document the game's own
+/// The Machines window's half that lives in the game's web UI: overview.js, run in the root document the game's
 /// pages sit in. It draws the window and puts the Machines button in the HUD's tool column. The web view can reload at
 /// any time and lose the script, so it is checked for every couple of seconds and put back when the page says it is
 /// missing.

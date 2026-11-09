@@ -3,7 +3,7 @@ using System;
 namespace MachineSpeed.Core;
 
 /// <summary>
-/// The picture beside a row: the game's own web icon for the furniture, as a path from the WebUI folder (the folder
+/// The picture beside a row: the game's web icon for the furniture, as a path from the WebUI folder (the folder
 /// Root.html is in). The furniture table writes it for a page two folders down ("../../Res/Furniture/x.png"); a piece
 /// with no icon of its own gets its kind's usual one.
 /// </summary>

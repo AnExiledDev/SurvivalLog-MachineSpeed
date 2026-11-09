@@ -43,7 +43,7 @@ public abstract record Contents
     {
     }
 
-    /// <summary>The game's own name for the product.</summary>
+    /// <summary>The game's name for the product.</summary>
     public sealed record Named(string Name) : Contents;
 
     /// <summary>A compost bin's items.</summary>

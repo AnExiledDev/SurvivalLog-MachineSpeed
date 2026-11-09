@@ -82,7 +82,7 @@ internal static class AmountPatches
 
 /// <summary>
 /// One amount setting's hooks, put in the first time the setting leaves 1, so a setting never changed never hooks the
-/// game. Once in, the hooks stay and hand back the game's own amounts at 1. A hook that cannot go in leaves the game's
+/// game. Once in, the hooks stay and hand back the game's amounts at 1. A hook that cannot go in leaves the game's
 /// amount and is logged as "could not hook", which marks the mod as needing an update after a game update.
 /// </summary>
 internal sealed class AmountHook
