@@ -17,8 +17,8 @@ internal static class AmountPatches
 {
     private const string Section = "Amounts";
 
-    private const string OutputRange = "Fractions carry over to the next one, so 1.5 gives 1 and 2 by turns. From 1 to 100: less than 1 counts as 1, more than 100 counts as 100.";
-    private const string OutputRangeChinese = "小数部分累计到下一次，所以 1.5 会交替给出 1 和 2。范围 1 到 100：小于 1 按 1 计算，大于 100 按 100 计算。";
+    private const string OutputRange = "Fractions add up over time, so 1.5 gives 1 and 2 in turn. From 1 to 100: less than 1 counts as 1, more than 100 counts as 100.";
+    private const string OutputRangeChinese = "小数部分会累计，所以 1.5 会轮流给出 1 和 2。范围 1 到 100：小于 1 按 1 计算，大于 100 按 100 计算。";
     private const string RateRange = "From 0.1 to 100: 0 or less counts as 1, between 0 and 0.1 counts as 0.1, more than 100 counts as 100.";
     private const string RateRangeChinese = "范围 0.1 到 100：0 或更小按 1 计算，0 到 0.1 之间按 0.1 计算，大于 100 按 100 计算。";
 
@@ -61,8 +61,8 @@ internal static class AmountPatches
             $"How strongly powered fridges and freezers slow spoiling: 2 makes food in them spoil half as fast, 0.5 twice as fast. Food in a fridge never spoils faster than outside one, or slower than in a sealed cold store. In a cold room the game uses whichever is colder, the room or the fridge. {RateRange}",
             $"通电的冰箱和冰柜减缓食物腐烂的强度：2 让其中食物的腐烂速度减半，0.5 让腐烂速度加倍。冰箱里的食物不会比冰箱外腐烂得更快，也不会比密封冷库里更慢。在寒冷房间里，游戏取房间和冰箱中更冷的一方。{RateRangeChinese}");
         Watch(config, log, "EquipmentWear", 0f, 100f, EquipmentWearPatch.Use,
-            "How much durability defense devices lose to wear and attacks: 1 is the game's amount, 0.5 is half, 0 means no wear, 2 is twice as much. Doors and windows are not changed, and the wave report still counts the game's wear. Fractions carry over to the next hit. From 0 to 100: less than 0 counts as 1, more than 100 counts as 100.",
-            "防御装置因损耗和攻击失去的耐久：1 为游戏原量，0.5 为一半，0 为无损耗，2 为两倍。门窗不受影响，波次战报仍按游戏原本的「装置损耗」计算。小数部分累计到下一次。范围 0 到 100：小于 0 按 1 计算，大于 100 按 100 计算。");
+            "How much durability defense devices lose to wear and attacks: 1 is the game's amount, 0.5 is half, 0 means no wear, 2 is twice as much. Doors and windows are not changed. The wear line in the wave report still shows the normal amount. Fractions of a point add up over later hits. From 0 to 100: less than 0 counts as 1, more than 100 counts as 100.",
+            "防御装置因损耗和攻击失去的耐久：1 为游戏原量，0.5 为一半，0 为无损耗，2 为两倍。门窗不受影响。波次战报的「装置损耗」仍显示原本的数值。小数部分会在之后的受损中累计。范围 0 到 100：小于 0 按 1 计算，大于 100 按 100 计算。");
     }
 
     private static void Watch(ConfigFile config, ModLog log, string key, float least, float most, Action<Multiplier> use, string english, string chinese)

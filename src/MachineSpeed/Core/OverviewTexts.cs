@@ -30,7 +30,7 @@ public static class OverviewTexts
     public static readonly Phrase Idle = new("Idle", "闲置");
     public static readonly Phrase Done = new("Done", "完成");
     public static readonly Phrase OutOfFuel = new("Out of fuel", "燃料耗尽");
-    public static readonly Phrase DroneBack = new("Back", "成功返回");
+    public static readonly Phrase DroneBack = new("Back", "已返回");
     public static readonly Phrase GeneratorOff = new("Off", "已关闭");
     public static readonly Phrase PlantsReady = new("Ready", "可收获");
 
@@ -55,7 +55,7 @@ public static class OverviewTexts
 
     public static readonly Phrase RushLabel = new("Rush", "加速完成");
     public static readonly Phrase RushTip = new("Finish now for {0} survival points", "花费 {0} 生存点立即完成");
-    public static readonly Phrase RushTooFewTip = new("Needs {0} survival points, you have {1}", "需要生存点：{0}，拥有生存点：{1}");
+    public static readonly Phrase RushTooFewTip = new("Needs {0} survival points, you have {1}", "需要 {0} 生存点，你有 {1}");
     public static readonly Phrase RushTooFewShort = new("Need {0}, have {1}", "需要 {0}，拥有 {1}");
     public static readonly Phrase Rushed = new("Finished {0} for {1} survival points", "已花费 {1} 生存点完成「{0}」");
     public static readonly Phrase TooFewPoints = new("Not enough survival points", "生存点不足");
@@ -169,7 +169,7 @@ public static class OverviewTexts
         MachineKind.Brewing => new Phrase("Brew ready", "酒已酿好"),
         MachineKind.Shredder => new Phrase("Shredder finished", "粉碎机已完成"),
         MachineKind.RationPress => new Phrase("Ration Press finished", "口粮压制机已完成"),
-        MachineKind.DyeVat => new Phrase("Dye ready", "染料已完成"),
+        MachineKind.DyeVat => new Phrase("Dye ready", "染料已做好"),
         MachineKind.Cooking => new Phrase("Dish ready", "菜已做好"),
         MachineKind.Drone => new Phrase("Drone back", "无人机已返回"),
         _ => new Phrase("Machine finished", "机器已完成"),
