@@ -6,7 +6,7 @@ namespace MachineSpeed.Core;
 public enum Preset
 {
     Custom,
-    Vanilla,
+    Default,
     Relaxed,
     Fast,
     Instant,
@@ -45,7 +45,7 @@ public static class SpeedPlan
     public static float? PresetSpeed(Preset preset) => Known(preset) switch
     {
         Preset.Custom => null,
-        Preset.Vanilla => 1f,
+        Preset.Default => 1f,
         Preset.Relaxed => 2f,
         Preset.Fast => 5f,
         Preset.Instant => Speed.Fastest,

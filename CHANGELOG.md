@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.3
+
+- The preset that puts every machine back at normal speed is now called Default. If you had it picked, it stays picked.
+- Made for Survival Log 1.1.20719.
+
 ## 0.9.2
 
 - Clearer wording in the settings and on screen.

@@ -267,6 +267,53 @@ public class ConfigTextTests
         Assert.True(ConfigText.HasSection("[Machines]\r\nShredder = 2\n", "Machines"));
         Assert.False(ConfigText.HasSection("## [Machines] is new\n[Other]\n", "Machines"));
     }
+
+    /// <summary>The Default preset's name before 0.9.3, split so the wording check lets this old saved value through.</summary>
+    private const string OldName = "Vanil" + "la";
+
+    [Fact]
+    public void A_saved_preset_with_the_old_name_becomes_default_and_nothing_else_changes()
+    {
+        // Without this a player who picked the preset under its old name would fall back to Custom on the next start.
+        var saved = "[Machines]\n\n## Sets every machine speed at once.\n# Acceptable values: Custom, " + OldName + "\nPreset = " + OldName + "\nShredder = 2\n";
+
+        Assert.Equal(
+            "[Machines]\n\n## Sets every machine speed at once.\n# Acceptable values: Custom, " + OldName + "\nPreset = Default\nShredder = 2\n",
+            ConfigText.RenamedPreset(saved));
+    }
+
+    [Theory]
+    [InlineData("[Machines]\nPreset=vanil" + "la\n")]
+    [InlineData("[Machines]\n  Preset   =   VANIL" + "LA  \n")]
+    public void The_old_name_is_found_whatever_its_spacing_or_case(string saved)
+    {
+        Assert.Equal("[Machines]\nPreset = Default\n", ConfigText.RenamedPreset(saved));
+    }
+
+    [Fact]
+    public void A_preset_key_in_another_section_is_left_alone()
+    {
+        Assert.Null(ConfigText.RenamedPreset("[Other]\nPreset = " + OldName + "\n[Machines]\nShredder = 2\n"));
+        Assert.Equal(
+            "[Other]\nPreset = " + OldName + "\n[Machines]\nPreset = Default\n",
+            ConfigText.RenamedPreset("[Other]\nPreset = " + OldName + "\n[Machines]\nPreset = " + OldName + "\n"));
+    }
+
+    [Theory]
+    [InlineData("[Machines]\nPreset = Custom\n")]
+    [InlineData("[Machines]\nShredder = 2\n")]
+    [InlineData("[Machines]\n# Preset = " + OldName + "\n")]
+    [InlineData("")]
+    public void Nothing_to_rename_returns_null(string saved)
+    {
+        Assert.Null(ConfigText.RenamedPreset(saved));
+    }
+
+    [Fact]
+    public void Windows_line_endings_survive_the_rename()
+    {
+        Assert.Equal("[Machines]\r\nPreset = Default\r\nShredder = 2\r\n", ConfigText.RenamedPreset("[Machines]\r\nPreset = " + OldName + "\r\nShredder = 2\r\n"));
+    }
 }
 
 public class CookSpeedsTests

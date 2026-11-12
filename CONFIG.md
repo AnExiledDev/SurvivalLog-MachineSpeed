@@ -21,7 +21,7 @@ Generator fuel burn and generator efficiency moved to the Power Manager mod. It 
 | `Brewing` | `1` | Speed of brewing alcohol. |
 | `Cooking` | `1` | Speed of cooking at a stove or hot pot. A dish uses the same fuel at any speed. |
 | `CookingFuel` | `1` | How much fuel a stove or hot pot uses for each dish. 1 is the normal amount, 0.5 is half, 0 uses none, 2 is twice as much. From 0 to 20, and less than 0 counts as 1. |
-| `Preset` | `Custom` | Sets every machine speed at once. `Custom` uses the speed you set for each machine. The others set every machine to normal speed, 2x (`Relaxed`), 5x (`Fast`) or 100000x (`Instant`). The preset doesn't change `CookingFuel`. |
+| `Preset` | `Custom` | Sets every machine speed at once. `Custom` uses the speed you set for each machine. The others set every machine to normal speed (`Default`), 2x (`Relaxed`), 5x (`Fast`) or 100000x (`Instant`). The preset doesn't change `CookingFuel`. |
 | `ShredderAutoStart` | `false` | Starts an idle shredder by itself when you put items into it, as if you pressed Start. Taking items out doesn't start it, so a shredder you stopped stays stopped until you add more. It still needs power and room in its tray. |
 | `FollowDayLength` | `false` | For the Day Length mod. Machines keep the same pace in real time, so with days twice as long, every machine speed is doubled, on top of the preset. It picks up Day Length's setting when a save loads. Does nothing without Day Length. |
 

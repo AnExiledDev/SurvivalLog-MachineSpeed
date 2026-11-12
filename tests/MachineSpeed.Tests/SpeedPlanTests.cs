@@ -14,7 +14,7 @@ public class PresetTests
     }
 
     [Theory]
-    [InlineData(Preset.Vanilla, 1f)]
+    [InlineData(Preset.Default, 1f)]
     [InlineData(Preset.Relaxed, 2f)]
     [InlineData(Preset.Fast, 5f)]
     [InlineData(Preset.Instant, Speed.Fastest)]
@@ -24,9 +24,9 @@ public class PresetTests
     }
 
     [Fact]
-    public void The_vanilla_preset_puts_every_machine_back_at_the_games_pace()
+    public void The_default_preset_puts_every_machine_back_at_the_games_pace()
     {
-        Assert.True(SpeedPlan.Effective(Speed.From(50f), Preset.Vanilla, DayFactor.None).IsGamePace);
+        Assert.True(SpeedPlan.Effective(Speed.From(50f), Preset.Default, DayFactor.None).IsGamePace);
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public class FollowDayLengthTests
     public void Longer_days_speed_up_a_preset_too()
     {
         Assert.Equal(10f, SpeedPlan.Effective(Speed.From(3f), Preset.Fast, TwiceAsLong).Value);
-        Assert.Equal(2f, SpeedPlan.Effective(Speed.From(3f), Preset.Vanilla, TwiceAsLong).Value);
+        Assert.Equal(2f, SpeedPlan.Effective(Speed.From(3f), Preset.Default, TwiceAsLong).Value);
     }
 
     [Fact]

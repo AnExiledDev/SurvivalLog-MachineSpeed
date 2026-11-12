@@ -17,7 +17,7 @@ Each machine has its own speed. 2 means a job takes half the game time, 0.5 mean
 - **Cooking**: dishes at a stove or hot pot cook faster. A dish uses the same fuel at any speed.
 - **Cooking fuel**: how much fuel a stove or hot pot uses for each dish. 0.5 is half, 0 uses none.
 - **Takes your old settings**: brewing and cooking used to be in Action Speed. The first time Machine Speed starts, it reads your `Brewing` and `Cooking` values from Action Speed's config and uses them.
-- **Presets**: `Preset` sets every speed at once, to normal speed, Relaxed (2x), Fast (5x) or Instant.
+- **Presets**: `Preset` sets every speed at once, to normal speed (Default), Relaxed (2x), Fast (5x) or Instant.
 - **Shredder auto-start**: with `ShredderAutoStart` on, an idle shredder starts by itself when you put items into it.
 - **Follow Day Length**: if you use the Day Length mod, `FollowDayLength` keeps machines working at the same real-time pace on longer or shorter days.
 - **Amounts**: you can get more out of the shredder, Ration Press, brewing barrels, compost bins and harvests, make bigger brews, charge robots faster, make fridges and freezers keep food longer and cut the wear on defense devices. See the Amounts section of [CONFIG.md](CONFIG.md).
