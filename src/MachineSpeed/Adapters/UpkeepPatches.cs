@@ -217,7 +217,7 @@ internal static class FridgeStrengthPatch
 
             if (item == null || _strength.IsGameAmount) return;
 
-            var frame = UnityEngine.Time.frameCount;
+            var frame = UnityFrame.Count();
 
             if (FridgeRowOf(item, frame) is not { } row) return;
 
@@ -385,7 +385,7 @@ internal static class EquipmentWearPatch
     /// <summary>A wave can wear many pieces many times in one frame, so each piece is looked up once in that frame.</summary>
     private static bool IsDefenseDevice(long furnitureId)
     {
-        DevicesThisFrame.Use(UnityEngine.Time.frameCount);
+        DevicesThisFrame.Use(UnityFrame.Count());
 
         if (DevicesThisFrame.TryGet(furnitureId, out var known)) return known;
 

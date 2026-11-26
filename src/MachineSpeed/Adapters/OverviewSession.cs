@@ -67,7 +67,7 @@ internal sealed class OverviewSession
 
     public void Update()
     {
-        var now = Time.unscaledTime;
+        var now = HourJobs.Now;
 
         _page.KeepInstalled(now);
 
@@ -314,7 +314,7 @@ internal sealed class OverviewSession
         _isOpen = true;
         InputGate.Opened(WindowName);
         Show(read, nowSeconds, isOpening: true, isChinese);
-        _nextRefreshAt = Time.unscaledTime + OpenRefreshSeconds;
+        _nextRefreshAt = HourJobs.Now + OpenRefreshSeconds;
         _log("Machines window opened");
     }
 

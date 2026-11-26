@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.5
+
+- Small speed up: the mod reads the time and the frame in a cheaper way.
+- Made for Survival Log 1.1.21671.
+
 ## 0.9.4
 
 - A stove or hot pot that was cooking when you loaded a save now burns fuel at the cooking speed of that world. Before, a world with its own cooking speed could burn too much fuel at once on load.

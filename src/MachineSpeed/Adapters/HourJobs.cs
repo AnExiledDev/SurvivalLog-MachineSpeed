@@ -29,6 +29,7 @@ internal static class HourJobs
     private const float PlantScanSeconds = 5f;
 
     private static readonly Dictionary<(string Kind, long Id), IHourJob> Jobs = new();
+    private static readonly double LoadedAt = Clock.Now;
 
     // Kept and emptied after each step, so stepping the jobs makes no new list four times a second.
     private static readonly List<KeyValuePair<(string Kind, long Id), IHourJob>> Stepping = new();
@@ -41,6 +42,12 @@ internal static class HourJobs
     // The bin and pot scans start apart, so the two never land on the same frame.
     private static float _nextBinScan = 1.25f;
     private static float _nextPlantScan = 3.75f;
+
+    /// <summary>
+    /// Real seconds since the mod loaded, from the Toolkit clock. Counted from load so a float keeps its precision
+    /// however long the computer has been on.
+    /// </summary>
+    public static float Now => (float)(Clock.Now - LoadedAt);
 
     public static void ReportFailuresTo(PatchKit hooks) => _fail = ex => hooks.Fail("moving a brew, dye job or compost bin along, it keeps the game's duration", ex);
 
@@ -145,7 +152,7 @@ public sealed class MachineTicker : MonoBehaviour
     {
     }
 
-    private void Update() => HourJobs.Tick(Time.realtimeSinceStartup);
+    private void Update() => HourJobs.Tick(HourJobs.Now);
 }
 
 /// <summary>

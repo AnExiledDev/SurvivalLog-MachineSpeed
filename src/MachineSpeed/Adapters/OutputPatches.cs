@@ -305,7 +305,7 @@ internal static class CompostOutputPatch
     /// </summary>
     private static bool IsBin(ItemManager items, long holder)
     {
-        BinsThisFrame.Use(UnityEngine.Time.frameCount);
+        BinsThisFrame.Use(UnityFrame.Count());
 
         if (BinsThisFrame.TryGet(holder, out var isBin)) return isBin;
 
