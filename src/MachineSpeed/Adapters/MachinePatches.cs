@@ -275,7 +275,7 @@ internal static class CookingPatch
         _hook?.IsIn == true ? _cooks?.For(cook.Pointer.ToInt64()) ?? _speed : Speed.GamePace;
 
     /// <summary>Another world was loaded; its stoves can reuse the old world's addresses.</summary>
-    public static void Forget() => _cooks?.Forget();
+    public static void Forget() => _cooks?.Forget(_speed);
 
     private static void Scale(CookingComponent __instance, ref float cookDuration)
     {

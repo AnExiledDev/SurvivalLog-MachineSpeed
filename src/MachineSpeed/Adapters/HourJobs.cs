@@ -101,6 +101,7 @@ internal static class HourJobs
         PlantCaches.Forget();
         TimerPage.Forget();
         CookingPatch.Forget();
+        if (world?._AgentManager is { } agents) RobotChargingPatch.KeepOnly(agents);
         _world = pointer;
 
         return false;

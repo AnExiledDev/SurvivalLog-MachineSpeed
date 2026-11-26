@@ -54,7 +54,7 @@ All settings are listed in [CONFIG.md](CONFIG.md).
 
 ## Requirements
 
-- Survival Log 1.1.20719. A game update can break the mod until it is updated.
+- Survival Log 1.1.21671. A game update can break the mod until it is updated.
 - The [BepInEx Pack for Survival Log](https://www.nexusmods.com/survivallog/mods/12), the BepInEx 6 (IL2CPP) build for the game.
 - [Exiled's Toolkit](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit) 0.19.0 or newer. Machine Speed doesn't load without it. It shows the done notices and Machine Speed's other messages as toasts, applies settings changed on the Mod Manager's Mods screen without a restart, and its UI size setting sizes the Machines window.
 - Optional: Day Length, for `FollowDayLength`.

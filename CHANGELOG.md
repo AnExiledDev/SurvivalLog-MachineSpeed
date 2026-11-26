@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.4
+
+- A stove or hot pot that was cooking when you loaded a save now burns fuel at the cooking speed of that world. Before, a world with its own cooking speed could burn too much fuel at once on load.
+- Robots from earlier loads and expeditions are no longer kept in memory.
+- Made for Survival Log 1.1.21671.
+
 ## 0.9.3
 
 - The preset that puts every machine back at normal speed is now called Default. If you had it picked, it stays picked.

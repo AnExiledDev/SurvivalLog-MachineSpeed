@@ -340,13 +340,25 @@ public class CookSpeedsTests
     public void A_cook_in_another_loaded_world_does_not_take_a_speed_from_the_last_one()
     {
         // A stove in the next save can sit at the same address as one in the last save.
-        var startSpeed = Speed.From(4f);
-        var cooks = new CookSpeeds(startSpeed);
+        var loadedAt = Speed.From(4f);
+        var cooks = new CookSpeeds(Speed.GamePace);
         cooks.Started(Stove, Speed.From(100f));
 
-        cooks.Forget();
+        cooks.Forget(loadedAt);
 
-        Assert.Same(startSpeed, cooks.For(Stove));
+        Assert.Same(loadedAt, cooks.For(Stove));
+    }
+
+    [Fact]
+    public void A_cook_from_a_loaded_save_burns_at_the_speed_that_world_loaded_at()
+    {
+        // The game owes the whole cook so far in fuel at once, so a world at x1 with a game that started at x5 would
+        // burn five times the fuel on the first tick.
+        var cooks = new CookSpeeds(Speed.From(5f));
+
+        cooks.Forget(Speed.GamePace);
+
+        Assert.Same(Speed.GamePace, cooks.For(Stove));
     }
 
     [Fact]

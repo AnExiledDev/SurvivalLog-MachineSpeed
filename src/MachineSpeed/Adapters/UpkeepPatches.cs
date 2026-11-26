@@ -117,6 +117,27 @@ internal static class RobotChargingPatch
         }
     }
 
+    /// <summary>
+    /// A new world was found. Robots from earlier worlds are dropped: each load makes every robot again, with a new
+    /// owner id that the game never hands out twice, so a robot whose owner is not in this world is gone. This world's
+    /// robots loaded before it was found, so they stay.
+    /// </summary>
+    public static void KeepOnly(AgentManager agents)
+    {
+        foreach (var pointer in Robots.Keys.ToList())
+        {
+            try
+            {
+                if (agents.GetAgent(Robots[pointer].Robot.ownerInstanceId) == null) Robots.Remove(pointer);
+            }
+            catch (Exception ex)
+            {
+                Robots.Remove(pointer);
+                _fail(ex);
+            }
+        }
+    }
+
     private static void MoveRobotsOver()
     {
         foreach (var pointer in Robots.Keys.ToList())
